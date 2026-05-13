@@ -355,7 +355,7 @@ if(isRegularAxMember) {
     const container = document.getElementById('boardContainer');
     
     // 일반 팀원이면 UI 조작과 무관하게 무조건 session의 본인 이름으로 고정
-    const mVal = isRegularAxMember ? currentUser.name : document.getElementById('memberFilter').value.trim();
+    const mVal = document.getElementById('memberFilter').value.trim();
     filters.member = mVal === '' ? '전체' : mVal;
 
     const filteredTasks = rawData.tasks.filter(t => {
