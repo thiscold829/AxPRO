@@ -66,7 +66,7 @@
   </div>
 
   <div class="max-w-[1600px] w-full mx-auto px-4 lg:px-6 py-3 flex flex-col gap-3">
-    <div class="flex items-center gap-5 overflow-x-auto pb-1 scrollbar-hide" id="filterArea">
+    <div class="flex flex-wrap items-center gap-y-3 gap-x-5 pb-1" id="filterArea">
       <div class="flex items-center gap-2.5 shrink-0">
         <span class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Team</span>
         <div class="flex gap-1.5" id="teamFilters">
@@ -603,7 +603,7 @@
 
     // RBAC: 팀원이 다른 사람의 업무를 수정하려 할 때 원천 차단
     if(isRegularAxMember && t.member_name !== currentUser.name) {
-      alert("⚠️ 권한 알림\n팀원은 본인이 작성한 업무만 수정 및 삭제할 수 있습니다.\n(팀장, 실장 만 타인 업무 수정 및 삭제가 가능합니다)");
+      alert("⚠️권한 알림\n팀원은 본인이 작성한 업무만 수정 및 삭제할 수 있습니다.\n\n[팀장, 실장 만 타인 업무 수정 및 삭제가 가능합니다.]");
       return;
     }
 
