@@ -144,8 +144,7 @@
 
   // 오류 방지를 위해 모든 헤더(컬럼명)를 강제로 소문자로 변환하여 파싱
   function parseCSV(t) {
-    const lines = t.trim().split('\
-'); if(lines.length < 2) return [];
+    const lines = t.trim().split('\\n'); if(lines.length < 2) return [];
     
     // 컬럼명 대소문자 오타 방지를 위해 무조건 소문자 처리 (Name -> name, Mobile -> mobile)
     const hdrs = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
