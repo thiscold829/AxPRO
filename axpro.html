@@ -36,6 +36,9 @@
   
   @keyframes pulse-sync { 50% { opacity: 0.4; } }
   .syncing { animation: pulse-sync 1s infinite; }
+
+  /* 커스텀 드롭다운용 스타일 */
+  .disabled-dropdown { opacity: 0.6; pointer-events: none; background-color: #f1f5f9 !important; border-color: #e2e8f0 !important; }
 </style>
 </head>
 <body>
@@ -84,8 +87,21 @@
       <div class="w-[1px] h-5 bg-slate-200 shrink-0"></div>
       <div class="flex items-center gap-2.5 shrink-0">
         <span class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Member</span>
-        <!-- 공백 시 '전체'로 복구하는 onblur 로직 추가 -->
-        <input list="dlMembersFilter" id="memberFilter" class="compact-input py-1 px-3 text-[12px] w-[110px] bg-transparent border-none shadow-none placeholder-slate-400 cursor-text" placeholder="담당자 검색" onclick="this.value=''; handleMemberInput();" oninput="handleMemberInput()" onblur="if(this.value.trim() === '') { this.value = '전체'; handleMemberInput(); }">
+        
+        <!-- 커스텀 드롭다운: 담당자 필터 -->
+        <div class="relative custom-select w-[110px]" id="wrapper-memberFilter">
+          <div class="flex justify-between items-center cursor-pointer select-none py-1.5 px-3 text-[12px] font-bold text-slate-600 bg-transparent hover:bg-slate-100 rounded transition" onclick="toggleDropdown('memberFilter')">
+            <span id="display-memberFilter" class="truncate w-full">전체</span>
+            <span class="ms text-[14px] text-slate-400">expand_more</span>
+          </div>
+          <div id="drop-memberFilter" class="dropdown-menu absolute top-full left-0 mt-1 w-[150px] bg-white border border-slate-200 rounded-lg shadow-xl z-[100] hidden flex-col overflow-hidden">
+            <div class="p-1.5 border-b border-slate-100 bg-slate-50">
+              <input type="text" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-[12px] outline-none focus:border-blue-400" placeholder="이름 검색..." oninput="filterList('memberFilter', this.value)">
+            </div>
+            <div class="max-h-[200px] overflow-y-auto custom-scroll" id="opts-memberFilter"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -110,8 +126,35 @@
   <div id="inputDockWrapper">
     <div class="bg-white border border-blue-100 rounded-xl p-5 mt-3 shadow-md flex flex-col gap-4">
       <div class="flex flex-col sm:flex-row gap-3">
-        <input list="dlProjects" id="inProject" class="compact-input sm:w-[160px] shrink-0" placeholder="과제명" onclick="this.value=''">
-        <input list="dlMembers" id="inMember" class="compact-input sm:w-[120px] shrink-0" placeholder="담당자" onclick="this.value=''">
+        
+        <!-- 커스텀 드롭다운: 새 과제명 -->
+        <div class="relative custom-select sm:w-[160px] shrink-0" id="wrapper-inProject">
+          <div class="compact-input flex justify-between items-center cursor-pointer select-none" onclick="toggleDropdown('inProject')">
+            <span id="display-inProject" class="truncate text-slate-400">과제명 선택</span>
+            <span class="ms text-[16px] text-slate-400">expand_more</span>
+          </div>
+          <div id="drop-inProject" class="dropdown-menu absolute top-full left-0 mt-1 w-full min-w-[200px] bg-white border border-slate-200 rounded-lg shadow-xl z-[100] hidden flex-col overflow-hidden">
+            <div class="p-1.5 border-b border-slate-100 bg-slate-50">
+              <input type="text" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-[12px] outline-none focus:border-blue-400" placeholder="과제 검색..." oninput="filterList('inProject', this.value)">
+            </div>
+            <div class="max-h-[200px] overflow-y-auto custom-scroll" id="opts-inProject"></div>
+          </div>
+        </div>
+
+        <!-- 커스텀 드롭다운: 새 담당자 -->
+        <div class="relative custom-select sm:w-[120px] shrink-0" id="wrapper-inMember">
+          <div class="compact-input flex justify-between items-center cursor-pointer select-none" onclick="toggleDropdown('inMember')">
+            <span id="display-inMember" class="truncate text-slate-400">담당자 선택</span>
+            <span class="ms text-[16px] text-slate-400">expand_more</span>
+          </div>
+          <div id="drop-inMember" class="dropdown-menu absolute top-full left-0 mt-1 w-full min-w-[150px] bg-white border border-slate-200 rounded-lg shadow-xl z-[100] hidden flex-col overflow-hidden">
+            <div class="p-1.5 border-b border-slate-100 bg-slate-50">
+              <input type="text" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-[12px] outline-none focus:border-blue-400" placeholder="이름 검색..." oninput="filterList('inMember', this.value)">
+            </div>
+            <div class="max-h-[200px] overflow-y-auto custom-scroll" id="opts-inMember"></div>
+          </div>
+        </div>
+
         <input type="text" id="inTask" class="compact-input flex-1 min-w-0" placeholder="수행할 업무 내용을 입력하세요... (Enter 등록)" onkeypress="if(event.keyCode==13) addTask()">
       </div>
       <div class="flex flex-wrap items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
@@ -140,9 +183,33 @@
     <input type="hidden" id="edId">
     
     <div class="flex gap-4 mb-5">
-      <input list="dlProjects" id="edProject" class="compact-input flex-1" placeholder="과제명" onclick="this.value=''">
-      <!-- 수정 모달에서도 담당자 변경 제한 해제 -->
-      <input list="dlMembers" id="edMember" class="compact-input w-[120px]" placeholder="담당자" onclick="this.value=''">
+      <!-- 커스텀 드롭다운: 수정 과제명 -->
+      <div class="relative custom-select flex-1" id="wrapper-edProject">
+        <div class="compact-input flex justify-between items-center cursor-pointer select-none" onclick="toggleDropdown('edProject')">
+          <span id="display-edProject" class="truncate">과제명</span>
+          <span class="ms text-[16px] text-slate-400">expand_more</span>
+        </div>
+        <div id="drop-edProject" class="dropdown-menu absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl z-[100] hidden flex-col overflow-hidden">
+          <div class="p-1.5 border-b border-slate-100 bg-slate-50">
+            <input type="text" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-[12px] outline-none focus:border-blue-400" placeholder="과제 검색..." oninput="filterList('edProject', this.value)">
+          </div>
+          <div class="max-h-[200px] overflow-y-auto custom-scroll" id="opts-edProject"></div>
+        </div>
+      </div>
+
+      <!-- 커스텀 드롭다운: 수정 담당자 -->
+      <div class="relative custom-select w-[120px]" id="wrapper-edMember">
+        <div class="compact-input flex justify-between items-center cursor-pointer select-none" onclick="toggleDropdown('edMember')">
+          <span id="display-edMember" class="truncate">담당자</span>
+          <span class="ms text-[16px] text-slate-400">expand_more</span>
+        </div>
+        <div id="drop-edMember" class="dropdown-menu absolute top-full left-0 mt-1 w-full min-w-[150px] bg-white border border-slate-200 rounded-lg shadow-xl z-[100] hidden flex-col overflow-hidden">
+          <div class="p-1.5 border-b border-slate-100 bg-slate-50">
+            <input type="text" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-[12px] outline-none focus:border-blue-400" placeholder="이름 검색..." oninput="filterList('edMember', this.value)">
+          </div>
+          <div class="max-h-[200px] overflow-y-auto custom-scroll" id="opts-edMember"></div>
+        </div>
+      </div>
     </div>
     <textarea id="edTask" class="compact-input w-full min-h-[100px] resize-none mb-5 text-[14px] leading-relaxed" placeholder="수행할 내용"></textarea>
     
@@ -161,10 +228,6 @@
     </div>
   </div>
 </div>
-
-<datalist id="dlProjects"></datalist>
-<datalist id="dlMembers"></datalist>
-<datalist id="dlMembersFilter"></datalist>
 
 <form id="hidden_form" target="hidden_iframe" method="POST" style="display:none;"><input type="hidden" name="payload" id="payload_input"></form>
 <iframe name="hidden_iframe" style="display:none;" onload="if(window.isSaving) onSaveSuccess();"></iframe>
@@ -185,17 +248,16 @@
   const isAxTeam = currentUser.dept && (currentUser.dept.includes('식품') || currentUser.dept.includes('환경'));
   const isManager = currentUser.rank && (currentUser.rank.includes('팀장') || currentUser.rank.includes('실장') || currentUser.rank.includes('사장') || currentUser.rank.includes('본부장'));
   
+  // 팀원 여부 (관리자 제외 일반 AX팀 소속)
   const isRegularAxMember = isAxTeam && !isManager;
 
   let rawData = { members: [], projects: [], tasks: [] };
   
-  let filters = { 
-    team: '전체', 
-    period: '전체', 
-    member: '전체', // 초기값. 로드 후 applyRoleBasedUI에서 세팅
-    selectedProjects: new Set() 
-  };
+  let filters = { team: '전체', period: '전체', member: '전체', selectedProjects: new Set() };
   let isDockOpen = false;
+
+  // 커스텀 드롭다운 선택값 저장소
+  let cv = { memberFilter: '', inProject: '', inMember: '', edProject: '', edMember: '' };
 
   window.onload = async () => {
     if(!S_ID) return alert("config.js에 SHEET_ID가 없습니다.");
@@ -205,31 +267,78 @@
       fetchData('tasks').then(d => rawData.tasks = d)
     ]);
     
-    populateProjectDatalist();
-    updateMemberDatalist(); 
-    
-    // 로그인 계정 기준으로 초기값만 세팅 (이후 변경 가능)
-    applyRoleBasedUI(); 
-    
-    let mVal = document.getElementById('memberFilter').value.trim();
-    if (mVal === '') mVal = '전체';
-    filters.member = mVal;
+    // RBAC 및 초기값 세팅 (로그인 시 내 이름으로 필터 고정)
+    applyInitialSettings();
 
+    // 드롭다운 리스트 렌더링
+    renderProjectDropdowns();
+    renderMemberDropdowns(); 
+    
     updateProjectChips(); 
     renderBoard();
   };
 
-  // 초기 로드 시에만 내 이름을 기본값으로 넣어주는 역할로 변경 (잠금 해제)
-  function applyRoleBasedUI() {
-    const elMemberFilter = document.getElementById('memberFilter');
-    const elInMember = document.getElementById('inMember');
+  // 커스텀 드롭다운 제어 로직
+  function toggleDropdown(id) {
+    const wrapper = document.getElementById(`wrapper-${id}`);
+    if (wrapper.classList.contains('disabled-dropdown')) return;
 
+    const drop = document.getElementById(`drop-${id}`);
+    const isHidden = drop.classList.contains('hidden');
+    
+    document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.add('hidden'));
+    
+    if (isHidden) {
+      drop.classList.remove('hidden');
+      const input = drop.querySelector('input');
+      input.value = ''; // 검색창 초기화
+      filterList(id, ''); // 전체 항목 표시
+      input.focus();
+    }
+  }
+
+  function selectOption(id, value, text) {
+    cv[id] = value;
+    const display = document.getElementById(`display-${id}`);
+    display.textContent = text || value || '선택';
+    display.classList.remove('text-slate-400');
+    display.classList.add('text-slate-800');
+
+    document.getElementById(`drop-${id}`).classList.add('hidden');
+    
+    if (id === 'memberFilter') {
+      filters.member = value === '' ? '전체' : value;
+      updateProjectChips();
+      renderBoard();
+    }
+  }
+
+  function filterList(id, query) {
+    const opts = document.getElementById(`opts-${id}`).children;
+    const q = query.toLowerCase();
+    for(let opt of opts) {
+      const txt = opt.textContent.toLowerCase();
+      opt.style.display = txt.includes(q) ? 'block' : 'none';
+    }
+  }
+
+  // 바탕 클릭 시 드롭다운 닫기
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-select')) {
+      document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.add('hidden'));
+    }
+  });
+
+  // 초기 권한 세팅 (RBAC 1~4번)
+  function applyInitialSettings() {
+    // 1번: 로그인 시 필터 및 추가창에 내 이름 세팅
+    selectOption('memberFilter', currentUser.name, currentUser.name);
+    selectOption('inMember', currentUser.name, currentUser.name);
+
+    // 3, 4번: 팀원 한정 담당자 필드 비활성화 (관리자는 개방)
     if(isRegularAxMember) {
-      elMemberFilter.value = currentUser.name;
-      elInMember.value = currentUser.name;
-    } else {
-      elMemberFilter.value = '전체';
-      elInMember.value = currentUser.name; // 새 업무 등록 담당자 기본값은 본인으로 편의 제공
+      document.getElementById('wrapper-inMember').classList.add('disabled-dropdown');
+      document.getElementById('wrapper-edMember').classList.add('disabled-dropdown');
     }
   }
 
@@ -255,51 +364,44 @@
     }).filter(row => Object.values(row).some(val => val !== '')); 
   }
 
-  function populateProjectDatalist() {
-    const projHTML = rawData.projects.map(p => `<option value="${p.short_name}">`).join('');
-    document.getElementById('dlProjects').innerHTML = projHTML;
+  function renderProjectDropdowns() {
+    const targetProjs = rawData.projects;
+    const html = targetProjs.map(p => `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-[13px] text-slate-700 font-medium border-b border-slate-50 last:border-0" onclick="selectOption('__ID__', '${p.short_name}', '${p.short_name}')">${p.short_name}</div>`).join('');
+    
+    document.getElementById('opts-inProject').innerHTML = html.replace(/__ID__/g, 'inProject');
+    document.getElementById('opts-edProject').innerHTML = html.replace(/__ID__/g, 'edProject');
   }
 
-  function updateMemberDatalist() {
-    let targetMembers = rawData.members.filter(m => m.dept && (m.dept.includes('식품') || m.dept.includes('환경')));
+  function renderMemberDropdowns() {
+    let allMembers = rawData.members.filter(m => m.dept && (m.dept.includes('식품') || m.dept.includes('환경')));
+    
+    // 필터 드롭다운용 (팀 필터에 따라 달라짐)
+    let filterMembers = allMembers;
     if (filters.team !== '전체') {
       const teamKeyword = filters.team.replace('AX', '').trim();
-      targetMembers = targetMembers.filter(m => m.dept && m.dept.includes(teamKeyword));
+      filterMembers = allMembers.filter(m => m.dept && m.dept.includes(teamKeyword));
     }
-    const memHTML = targetMembers.map(m => `<option value="${m.name}">`).join('');
-    document.getElementById('dlMembers').innerHTML = memHTML;       
     
-    // 필터 드롭다운에는 명시적으로 '전체' 옵션 추가
-    document.getElementById('dlMembersFilter').innerHTML = `<option value="전체"></option>` + memHTML; 
-  }
+    const filterHTML = `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-[13px] font-black text-blue-600 border-b border-slate-100" onclick="selectOption('memberFilter', '', '전체')">전체</div>` 
+                     + filterMembers.map(m => `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-[13px] text-slate-700 font-medium border-b border-slate-50 last:border-0" onclick="selectOption('memberFilter', '${m.name}', '${m.name}')">${m.name}</div>`).join('');
+    document.getElementById('opts-memberFilter').innerHTML = filterHTML;
 
-  function handleMemberInput() {
-    let mVal = document.getElementById('memberFilter').value.trim();
-    if (mVal === '') mVal = '전체'; // 잠금 해제: 빈값이면 무조건 '전체' 취급
-    filters.member = mVal;
-    updateProjectChips();
-    renderBoard();
+    // 추가/수정 드롭다운용 (팀에 무관하게 전사 직원 노출)
+    const memHTML = allMembers.map(m => `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-[13px] text-slate-700 font-medium border-b border-slate-50 last:border-0" onclick="selectOption('__ID__', '${m.name}', '${m.name}')">${m.name}</div>`).join('');
+    document.getElementById('opts-inMember').innerHTML = memHTML.replace(/__ID__/g, 'inMember');
+    document.getElementById('opts-edMember').innerHTML = memHTML.replace(/__ID__/g, 'edMember');
   }
 
   function setFilter(type, value) {
     filters[type] = value;
-
-    const parent = type === 'team'
-      ? document.getElementById('teamFilters')
-      : document.getElementById('periodFilters');
-
+    const parent = type === 'team' ? document.getElementById('teamFilters') : document.getElementById('periodFilters');
     parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     event.target.classList.add('active');
 
     if(type === 'team') {
-      updateMemberDatalist();
-      // 팀 필터 변경 시 담당자 필터도 '전체'로 초기화하여 혼선 방지
-      document.getElementById('memberFilter').value = '전체';
+      renderMemberDropdowns();
+      selectOption('memberFilter', '', '전체'); // 팀 변경 시 담당자 전체로 초기화
     }
-
-    let mVal = document.getElementById('memberFilter').value.trim();
-    if (mVal === '') mVal = '전체';
-    filters.member = mVal;
 
     updateProjectChips();
     renderBoard();
@@ -307,7 +409,6 @@
 
   function toggleAllProjects() {
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
-    
     const selectableProjs = targetProjs.filter(p => {
       return rawData.tasks.some(t => 
         t.project_short === p.short_name &&
@@ -322,30 +423,24 @@
       if (!filters.selectedProjects.has(p.short_name)) allSelected = false;
     });
 
-    if (allSelected && selectableProjs.length > 0) {
-      filters.selectedProjects.clear();
-    } else {
-      selectableProjs.forEach(p => filters.selectedProjects.add(p.short_name));
-    }
+    if (allSelected && selectableProjs.length > 0) filters.selectedProjects.clear();
+    else selectableProjs.forEach(p => filters.selectedProjects.add(p.short_name));
+    
     renderProjectChipsUI(); 
     renderBoard();
   }
 
   function toggleProjectChip(projName, chipElement) {
     if(chipElement.classList.contains('opacity-40')) return; 
+    if (filters.selectedProjects.has(projName)) filters.selectedProjects.delete(projName);
+    else filters.selectedProjects.add(projName);
     
-    if (filters.selectedProjects.has(projName)) {
-      filters.selectedProjects.delete(projName);
-    } else {
-      filters.selectedProjects.add(projName);
-    }
     renderProjectChipsUI();
     renderBoard();
   }
 
   function renderProjectChipsUI() {
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
-    
     const activeProjs = targetProjs.filter(p => {
       return rawData.tasks.some(t => 
         t.project_short === p.short_name &&
@@ -388,7 +483,6 @@
   function updateProjectChips() {
     filters.selectedProjects.clear();
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
-    
     targetProjs.forEach(p => {
       const hasTask = rawData.tasks.some(t => 
         t.project_short === p.short_name &&
@@ -402,7 +496,6 @@
 
   function renderBoard() {
     const container = document.getElementById('boardContainer');
-
     const filteredTasks = rawData.tasks.filter(t => {
       if(filters.period !== '전체' && t.period !== filters.period) return false;
       if(filters.member !== '전체' && t.member_name !== filters.member) return false;
@@ -469,20 +562,17 @@
   }
 
   function toggleInputDock() {
-    const dock = document.getElementById('inputDockWrapper');
     isDockOpen = !isDockOpen;
-    dock.classList.toggle('expanded');
+    document.getElementById('inputDockWrapper').classList.toggle('expanded');
     document.getElementById('dockIcon').style.transform = isDockOpen ? "rotate(45deg)" : "rotate(0deg)";
-    if (isDockOpen) document.getElementById('inProject').focus();
   }
 
   function addTask() {
-    const proj = document.getElementById('inProject').value.trim();
-    // 잠금 해제: 강제 이름 덮어쓰기 로직 제거
-    const mem = document.getElementById('inMember').value.trim(); 
+    const proj = cv.inProject;
+    const mem = cv.inMember; 
     const task = document.getElementById('inTask').value.trim();
     
-    if(!proj || !task || !mem) return alert("과제명, 담당자, 업무 내용을 모두 입력하세요.");
+    if(!proj || !task || !mem) return alert("과제명, 담당자, 업무 내용을 모두 선택/입력하세요.");
     
     const newTask = {
       id: 'T-' + Date.now(), project_short: proj, member_name: mem, content: task,
@@ -494,14 +584,16 @@
     };
     
     rawData.tasks.push(newTask);
-    document.getElementById('inProject').value = ''; 
     document.getElementById('inTask').value = '';
     document.getElementById('inProgress').value = 0;
     document.getElementById('inStatus').value = '대기';
     document.getElementById('inPriority').value = '중';
-    // 등록 후 편의를 위해 담당자 필드를 다시 본인 이름으로 리셋 (선택사항)
-    document.getElementById('inMember').value = currentUser.name;
     
+    // 편의상 등록 후 담당자/과제명 초기화. (팀원은 내 이름 유지)
+    if(isRegularAxMember) selectOption('inMember', currentUser.name, currentUser.name);
+    else selectOption('inMember', '', '담당자 선택');
+    selectOption('inProject', '', '과제명 선택');
+
     updateProjectChips(); renderBoard(); commitToCloud();
   }
 
@@ -509,14 +601,16 @@
     const t = rawData.tasks.find(x => x.id === id);
     if(!t) return;
 
-    const elEdMember = document.getElementById('edMember');
-    // 잠금 해제: isRegularAxMember 제어 구문 완전 삭제
-    elEdMember.disabled = false;
-    elEdMember.classList.remove('bg-slate-100', 'cursor-not-allowed');
+    // RBAC: 팀원이 다른 사람의 업무를 수정하려 할 때 원천 차단
+    if(isRegularAxMember && t.member_name !== currentUser.name) {
+      alert("⚠️ 권한 알림\n팀원은 본인이 작성한 업무만 수정 및 삭제할 수 있습니다.(팀장, 실장 만 타인 업무 수정 및 삭제가 가능합니다)");
+      return;
+    }
 
     document.getElementById('edId').value = t.id;
-    document.getElementById('edProject').value = t.project_short;
-    elEdMember.value = t.member_name;
+    selectOption('edProject', t.project_short, t.project_short);
+    selectOption('edMember', t.member_name, t.member_name);
+    
     document.getElementById('edTask').value = t.content;
     document.getElementById('edStatus').value = t.status || '대기';
     document.getElementById('edProgress').value = t.progress || 0;
@@ -531,8 +625,8 @@
     const idx = rawData.tasks.findIndex(x => x.id === id);
     if(idx > -1) {
       rawData.tasks[idx] = {
-        id: id, project_short: document.getElementById('edProject').value,
-        member_name: document.getElementById('edMember').value, content: document.getElementById('edTask').value,
+        id: id, project_short: cv.edProject, member_name: cv.edMember, 
+        content: document.getElementById('edTask').value,
         period: rawData.tasks[idx].period, status: document.getElementById('edStatus').value,
         progress: document.getElementById('edProgress').value, priority: document.getElementById('edPriority').value,
         last_updated: new Date().toISOString()
