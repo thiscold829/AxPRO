@@ -207,11 +207,16 @@
   }
 
   function updateMemberDatalist() {
-    let targetMembers = rawData.members;
+    // 1. 기본 필터: '식품' 또는 '환경' 부서 사람만 대상
+    let targetMembers = rawData.members.filter(m => m.dept && (m.dept.includes('식품') || m.dept.includes('환경')));
+    
+    // 2. 상단 Team 필터가 '전체'가 아니라면 해당 팀만 한 번 더 필터링
     if (filters.team !== '전체') {
       const teamKeyword = filters.team.replace('AX', '').trim();
-      targetMembers = rawData.members.filter(m => m.dept && m.dept.includes(teamKeyword));
+      targetMembers = targetMembers.filter(m => m.dept && m.dept.includes(teamKeyword));
     }
+    
+    // 3. 필터링된 멤버로 Datalist(자동완성 및 드롭다운) 렌더링
     const memHTML = targetMembers.map(m => `<option value="${m.name}">`).join('');
     document.getElementById('dlMembers').innerHTML = memHTML;       
     document.getElementById('dlMembersFilter').innerHTML = memHTML; 
