@@ -18,13 +18,14 @@
 </head>
 <body>
 
-<div class="glass-card w-full max-w-[400px] p-10 m-4 flex flex-col items-center">
+<div class="glass-card w-full max-w-[400px] p-10 m-4 flex flex-col items-center text-center">
   <div class="w-16 h-16 bg-gradient-to-tr from-[#0066cc] to-[#7dd3fc] rounded-2xl flex items-center justify-center shadow-lg mb-6 transform hover:rotate-12 transition">
-    <span class="ms text-white text-[32px]">dashboard</span>
+    <span class="ms text-white text-[32px]">cloud</span>
   </div>
   
-  <h1 class="text-3xl font-[900] tracking-tighter text-slate-800 mb-1">AxPRO</h1>
-  <p class="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-8">Workspace Login</p>
+  <h1 class="text-3xl font-[900] tracking-tighter text-[#0066cc] mb-1">AxPRO</h1>
+  <p class="text-[12px] font-bold text-slate-500 uppercase tracking-widest mb-1">AX team Progress Report Overview</p>
+  <p class="text-[11px] font-bold text-slate-400 mb-8">AX팀 진행 보고 오버뷰</p>
 
   <div class="w-full flex flex-col gap-4">
     <div class="relative">
@@ -38,14 +39,15 @@
   </div>
 
   <button id="btnLogin" onclick="handleLogin()" class="w-full mt-8 bg-slate-800 text-white font-bold text-[15px] py-4 rounded-xl hover:bg-[#0066cc] transition shadow-lg flex justify-center items-center gap-2">
-    <span>로그인</span> <span class="ms text-[18px]">arrow_forward</span>
+    <span>로그인</span> 
+    <span class="ms text-[18px]">arrow_forward</span>
   </button>
 
   <p id="errorMsg" class="mt-4 text-rose-500 text-[12px] font-bold hidden"></p>
 </div>
 
 <script>
-  // 이미 로그인 되어있으면 메인으로 튕겨냄
+  // 이미 로그인 되어있으면 메인 대시보드로 강제 이동
   if(sessionStorage.getItem('axUser')) location.replace('axpro.html');
 
   async function handleLogin() {
@@ -63,13 +65,52 @@
     btn.disabled = true;
 
     try {
+      if(typeof CONFIG === 'undefined' || !CONFIG.SHEET_ID) throw new Error("config.js 설정 오류");
+      
       const res = await fetch(`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=members`);
       const text = await res.text();
       const members = parseCSV(text);
 
-      // 이름과 휴대폰 뒤 4자리 매칭 검사
-      const user = members.find(m => m.name === name && m.mobile && m.mobile.slice(-4) === pw);
+      // 하이픈(-) 제외하고 숫자만 뽑아서 뒤 4자리 비교
+      const user = members.find(m => {
+        if(!m.name || !m.mobile) return false;
+        const mobileNum = m.mobile.replace(/\\D/g, ''); // 숫자만 추출
+        return m.name === name && mobileNum.slice(-4) === pw;
+      });
       
       if(user) {
-        // 성공 시 세션스토리지에 저장 후 이동
-        sessionStorage.setItem('axUser', JSON
+        // 인증 성공 시 세션에 유저 정보(JSON) 저장 후 대시보드로 이동
+        sessionStorage.setItem('axUser', JSON.stringify(user));
+        location.replace('axpro.html');
+      } else {
+        err.textContent = "등록되지 않은 이름이거나 휴대폰 번호가 일치하지 않습니다.";
+        err.classList.remove('hidden');
+        btn.innerHTML = `<span>로그인</span> <span class="ms text-[18px]">arrow_forward</span>`;
+        btn.disabled = false;
+      }
+    } catch(e) {
+      err.textContent = "서버 접속 오류: " + e.message;
+      err.classList.remove('hidden');
+      btn.innerHTML = `<span>로그인</span> <span class="ms text-[18px]">arrow_forward</span>`;
+      btn.disabled = false;
+    }
+  }
+
+  function parseCSV(t) {
+    const lines = t.trim().split('\\n'); if(lines.length < 2) return [];
+    const hdrs = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    return lines.slice(1).map(l => {
+      const v = []; let c = '', q = false;
+      for(let i=0; i<l.length; i++) { 
+        const ch = l[i]; 
+        if(ch === '"') q = !q; 
+        else if(ch === ',' && !q) { v.push(c.trim()); c = ''; } 
+        else c += ch; 
+      }
+      v.push(c.trim()); 
+      const o = {}; hdrs.forEach((h, i) => o[h] = (v[i] || '').replace(/^"|"$/g, '')); return o;
+    }).filter(row => Object.values(row).some(val => val !== '')); 
+  }
+</script>
+</body>
+</html>
