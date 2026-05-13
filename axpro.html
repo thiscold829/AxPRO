@@ -84,7 +84,8 @@
       <div class="w-[1px] h-5 bg-slate-200 shrink-0"></div>
       <div class="flex items-center gap-2.5 shrink-0">
         <span class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Member</span>
-        <input type="search" list="dlMembersFilter" id="memberFilter" class="compact-input py-1 px-3 text-[12px] w-[110px] bg-transparent border-none shadow-none placeholder-slate-400 cursor-text" placeholder="담당자 검색" onclick="this.value=''; renderBoard();" onchange="renderBoard()" oninput="if(this.value === '') renderBoard()">
+        <!-- 1, 2번 반영: type="search" 제거 및 실시간 oninput 처리 -->
+        <input list="dlMembersFilter" id="memberFilter" class="compact-input py-1 px-3 text-[12px] w-[110px] bg-transparent border-none shadow-none placeholder-slate-400 cursor-text" placeholder="담당자 검색" onclick="this.value=''; handleMemberInput();" oninput="handleMemberInput()">
       </div>
     </div>
 
@@ -109,8 +110,8 @@
   <div id="inputDockWrapper">
     <div class="bg-white border border-blue-100 rounded-xl p-5 mt-3 shadow-md flex flex-col gap-4">
       <div class="flex flex-col sm:flex-row gap-3">
-        <input type="search" list="dlProjects" id="inProject" class="compact-input sm:w-[160px] shrink-0" placeholder="과제명" onclick="this.value=''">
-        <input type="search" list="dlMembers" id="inMember" class="compact-input sm:w-[120px] shrink-0" placeholder="담당자" onclick="this.value=''">
+        <input list="dlProjects" id="inProject" class="compact-input sm:w-[160px] shrink-0" placeholder="과제명" onclick="this.value=''">
+        <input list="dlMembers" id="inMember" class="compact-input sm:w-[120px] shrink-0" placeholder="담당자" onclick="this.value=''">
         <input type="text" id="inTask" class="compact-input flex-1 min-w-0" placeholder="수행할 업무 내용을 입력하세요... (Enter 등록)" onkeypress="if(event.keyCode==13) addTask()">
       </div>
       <div class="flex flex-wrap items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
@@ -139,8 +140,8 @@
     <input type="hidden" id="edId">
     
     <div class="flex gap-4 mb-5">
-      <input type="search" list="dlProjects" id="edProject" class="compact-input flex-1" placeholder="과제명" onclick="this.value=''">
-      <input type="search" list="dlMembers" id="edMember" class="compact-input w-[120px]" placeholder="담당자" onclick="if(!this.disabled) this.value=''">
+      <input list="dlProjects" id="edProject" class="compact-input flex-1" placeholder="과제명" onclick="this.value=''">
+      <input list="dlMembers" id="edMember" class="compact-input w-[120px]" placeholder="담당자" onclick="if(!this.disabled) this.value=''">
     </div>
     <textarea id="edTask" class="compact-input w-full min-h-[100px] resize-none mb-5 text-[14px] leading-relaxed" placeholder="수행할 내용"></textarea>
     
@@ -171,7 +172,6 @@
   const S_ID = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_ID) ? CONFIG.SHEET_ID : '';
   const A_URL = (typeof CONFIG !== 'undefined' && CONFIG.API_URL) ? CONFIG.API_URL : '';
 
-  // --- 로그인 상태 검증 및 RBAC(권한 제어) 설정 ---
   const userStr = sessionStorage.getItem('axUser');
   if(!userStr) {
     alert("로그인이 필요합니다.");
@@ -179,19 +179,15 @@
   }
   const currentUser = JSON.parse(userStr);
   
-  // 우상단 사용자 정보 표시
   document.getElementById('loginUserInfo').textContent = `${currentUser.dept || ''} ${currentUser.name} ${currentUser.rank || ''}`;
 
-  // 권한 판단
   const isAxTeam = currentUser.dept && (currentUser.dept.includes('식품') || currentUser.dept.includes('환경'));
   const isManager = currentUser.rank && (currentUser.rank.includes('팀장') || currentUser.rank.includes('실장') || currentUser.rank.includes('사장') || currentUser.rank.includes('본부장'));
   
-  // 식품, 환경 AX 소속이면서 관리자(팀장 이상)가 아닌 사람만 일반 팀원으로 간주
   const isRegularAxMember = isAxTeam && !isManager;
 
   let rawData = { members: [], projects: [], tasks: [] };
   
-  // 일반 팀원은 시작부터 자기 이름으로 필터 고정
   let filters = { 
     team: '전체', 
     period: '전체', 
@@ -210,18 +206,20 @@
     
     populateProjectDatalist();
     updateMemberDatalist(); 
-    applyRoleBasedUI(); // UI 잠금
+    applyRoleBasedUI(); 
+    
+    const mVal = document.getElementById('memberFilter').value.trim();
+    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
+
     updateProjectChips(); 
     renderBoard();
   };
 
-  // --- 권한별 UI 잠금 로직 ---
   function applyRoleBasedUI() {
     const elMemberFilter = document.getElementById('memberFilter');
     const elInMember = document.getElementById('inMember');
 
     if(isRegularAxMember) {
-      // 첫 로그인 시 자기 이름 자동 선택만 수행
       elMemberFilter.value = currentUser.name;
       elInMember.value = currentUser.name;
     } else {
@@ -235,7 +233,6 @@
     location.replace('index.html');
   }
 
-  // --- 기존 통신 및 렌더링 로직 ---
   async function fetchData(sheetName) {
     try {
       const res = await fetch(`https://docs.google.com/spreadsheets/d/${S_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`);
@@ -269,6 +266,14 @@
     document.getElementById('dlMembersFilter').innerHTML = memHTML; 
   }
 
+  // 2번 반영: 실시간 업데이트를 위한 핸들러
+  function handleMemberInput() {
+    const mVal = document.getElementById('memberFilter').value.trim();
+    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
+    updateProjectChips();
+    renderBoard();
+  }
+
   function setFilter(type, value) {
     filters[type] = value;
 
@@ -280,28 +285,38 @@
     event.target.classList.add('active');
 
     if(type === 'team') {
-      // 일반 팀원이 아닐 때만 담당자 검색창 초기화
       if(!isRegularAxMember) {
         document.getElementById('memberFilter').value = '';
       }
-
       updateMemberDatalist();
-      updateProjectChips();
     }
 
-    renderBoard();
-  }
+    const mVal = document.getElementById('memberFilter').value.trim();
+    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
 
-  function handleMemberFilterInput() {
-    updateMemberDatalist();
+    updateProjectChips();
     renderBoard();
   }
 
   function toggleAllProjects() {
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
-    const selectableProjs = targetProjs.filter(p => rawData.tasks.some(t => t.project_short === p.short_name));
     
-    if (filters.selectedProjects.size === selectableProjs.length && selectableProjs.length > 0) {
+    // 3번 반영: 활성화 가능한(조건에 맞는) 프로젝트만 식별
+    const selectableProjs = targetProjs.filter(p => {
+      return rawData.tasks.some(t => 
+        t.project_short === p.short_name &&
+        (filters.period === '전체' || t.period === filters.period) &&
+        (filters.member === '전체' || t.member_name === filters.member)
+      );
+    });
+    
+    let allSelected = true;
+    if (selectableProjs.length === 0) allSelected = false;
+    selectableProjs.forEach(p => {
+      if (!filters.selectedProjects.has(p.short_name)) allSelected = false;
+    });
+
+    if (allSelected && selectableProjs.length > 0) {
       filters.selectedProjects.clear();
     } else {
       selectableProjs.forEach(p => filters.selectedProjects.add(p.short_name));
@@ -322,16 +337,29 @@
     renderBoard();
   }
 
+  // 3, 4번 반영: 활성화된 사업만 앞쪽으로 정렬하고, 비어있는 것은 비활성화
   function renderProjectChipsUI() {
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
-    const selectableProjs = targetProjs.filter(p => rawData.tasks.some(t => t.project_short === p.short_name));
+    
+    // 현재 필터조건(Period, Member)에 업무가 하나라도 있는지 검사
+    const activeProjs = targetProjs.filter(p => {
+      return rawData.tasks.some(t => 
+        t.project_short === p.short_name &&
+        (filters.period === '전체' || t.period === filters.period) &&
+        (filters.member === '전체' || t.member_name === filters.member)
+      );
+    });
+    
+    // 4번 반영: 비활성된 프로젝트는 뒤로 분리
+    const disabledProjs = targetProjs.filter(p => !activeProjs.includes(p));
+    const sortedProjs = [...activeProjs, ...disabledProjs]; // 활성 먼저, 비활성 나중에 배치
     
     const btnToggle = document.getElementById('btnToggleProjects');
-    if (selectableProjs.length === 0) {
+    if (activeProjs.length === 0) {
       btnToggle.textContent = '선택 불가';
       btnToggle.classList.add('opacity-40', 'cursor-not-allowed');
       btnToggle.classList.remove('hover:bg-slate-300');
-    } else if (filters.selectedProjects.size === selectableProjs.length) {
+    } else if (activeProjs.every(ap => filters.selectedProjects.has(ap.short_name))) {
       btnToggle.textContent = '전체 해제';
       btnToggle.classList.remove('opacity-40', 'cursor-not-allowed');
       btnToggle.classList.add('hover:bg-slate-300');
@@ -341,10 +369,10 @@
       btnToggle.classList.add('hover:bg-slate-300');
     }
 
-    document.getElementById('projectFilters').innerHTML = targetProjs.map(p => {
-      const taskCount = rawData.tasks.filter(t => t.project_short === p.short_name).length;
-      if (taskCount === 0) {
-        return `<button class="chip chip-multi opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400" title="등록된 업무 없음">${p.short_name}</button>`;
+    document.getElementById('projectFilters').innerHTML = sortedProjs.map(p => {
+      const isActive = activeProjs.includes(p);
+      if (!isActive) {
+        return `<button class="chip chip-multi opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400" title="조건에 맞는 업무 없음">${p.short_name}</button>`;
       } else {
         const isSelected = filters.selectedProjects.has(p.short_name);
         return `<button class="chip chip-multi ${isSelected ? 'selected' : ''}" onclick="toggleProjectChip('${p.short_name}', this)">
@@ -354,22 +382,24 @@
     }).join('');
   }
 
+  // 필터가 바뀔 때마다 칩도 즉시 초기화/선택
   function updateProjectChips() {
     filters.selectedProjects.clear();
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
+    
     targetProjs.forEach(p => {
-      const taskCount = rawData.tasks.filter(t => t.project_short === p.short_name).length;
-      if (taskCount > 0) filters.selectedProjects.add(p.short_name);
+      const hasTask = rawData.tasks.some(t => 
+        t.project_short === p.short_name &&
+        (filters.period === '전체' || t.period === filters.period) &&
+        (filters.member === '전체' || t.member_name === filters.member)
+      );
+      if (hasTask) filters.selectedProjects.add(p.short_name);
     });
     renderProjectChipsUI();
   }
 
   function renderBoard() {
     const container = document.getElementById('boardContainer');
-    
-    // 일반 팀원이면 UI 조작과 무관하게 무조건 session의 본인 이름으로 고정
-    const mVal = document.getElementById('memberFilter').value.trim();
-    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
 
     const filteredTasks = rawData.tasks.filter(t => {
       if(filters.period !== '전체' && t.period !== filters.period) return false;
@@ -446,7 +476,6 @@
 
   function addTask() {
     const proj = document.getElementById('inProject').value.trim();
-    // 일반 팀원이면 강제로 본인 이름 지정
     const mem = isRegularAxMember ? currentUser.name : document.getElementById('inMember').value.trim();
     const task = document.getElementById('inTask').value.trim();
     
@@ -475,7 +504,6 @@
     const t = rawData.tasks.find(x => x.id === id);
     if(!t) return;
 
-    // 모달창 오픈 시 일반 팀원이면 담당자 변경 금지
     const elEdMember = document.getElementById('edMember');
     if(isRegularAxMember) {
       elEdMember.disabled = true;
