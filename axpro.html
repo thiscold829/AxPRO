@@ -84,7 +84,7 @@
       <div class="w-[1px] h-5 bg-slate-200 shrink-0"></div>
       <div class="flex items-center gap-2.5 shrink-0">
         <span class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Member</span>
-        <input list="dlMembersFilter" id="memberFilter" class="compact-input py-1 px-3 text-[12px] w-[110px] bg-transparent border-none shadow-none placeholder-slate-400 cursor-text" placeholder="담당자 검색" onchange="renderBoard()" oninput="if(this.value === '') renderBoard()">
+        <input type="search" list="dlMembersFilter" id="memberFilter" class="compact-input py-1 px-3 text-[12px] w-[110px] bg-transparent border-none shadow-none placeholder-slate-400 cursor-text" placeholder="담당자 검색" onclick="this.value=''; renderBoard();" onchange="renderBoard()" oninput="if(this.value === '') renderBoard()">
       </div>
     </div>
 
@@ -109,8 +109,8 @@
   <div id="inputDockWrapper">
     <div class="bg-white border border-blue-100 rounded-xl p-5 mt-3 shadow-md flex flex-col gap-4">
       <div class="flex flex-col sm:flex-row gap-3">
-        <input list="dlProjects" id="inProject" class="compact-input sm:w-[160px] shrink-0" placeholder="과제명">
-        <input list="dlMembers" id="inMember" class="compact-input sm:w-[120px] shrink-0" placeholder="담당자">
+        <input type="search" list="dlProjects" id="inProject" class="compact-input sm:w-[160px] shrink-0" placeholder="과제명" onclick="this.value=''">
+        <input type="search" list="dlMembers" id="inMember" class="compact-input sm:w-[120px] shrink-0" placeholder="담당자" onclick="this.value=''">
         <input type="text" id="inTask" class="compact-input flex-1 min-w-0" placeholder="수행할 업무 내용을 입력하세요... (Enter 등록)" onkeypress="if(event.keyCode==13) addTask()">
       </div>
       <div class="flex flex-wrap items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
@@ -139,8 +139,8 @@
     <input type="hidden" id="edId">
     
     <div class="flex gap-4 mb-5">
-      <input list="dlProjects" id="edProject" class="compact-input flex-1" placeholder="과제명">
-      <input list="dlMembers" id="edMember" class="compact-input w-[120px]" placeholder="담당자">
+      <input type="search" list="dlProjects" id="edProject" class="compact-input flex-1" placeholder="과제명" onclick="this.value=''">
+      <input type="search" list="dlMembers" id="edMember" class="compact-input w-[120px]" placeholder="담당자" onclick="if(!this.disabled) this.value=''">
     </div>
     <textarea id="edTask" class="compact-input w-full min-h-[100px] resize-none mb-5 text-[14px] leading-relaxed" placeholder="수행할 내용"></textarea>
     
@@ -220,7 +220,7 @@
     const elMemberFilter = document.getElementById('memberFilter');
     const elInMember = document.getElementById('inMember');
 
-if(isRegularAxMember) {
+    if(isRegularAxMember) {
       // 첫 로그인 시 자기 이름 자동 선택만 수행
       elMemberFilter.value = currentUser.name;
       elInMember.value = currentUser.name;
@@ -271,16 +271,29 @@ if(isRegularAxMember) {
 
   function setFilter(type, value) {
     filters[type] = value;
-    const parent = type === 'team' ? document.getElementById('teamFilters') : document.getElementById('periodFilters');
+
+    const parent = type === 'team'
+      ? document.getElementById('teamFilters')
+      : document.getElementById('periodFilters');
+
     parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     event.target.classList.add('active');
-    
+
     if(type === 'team') {
       // 일반 팀원이 아닐 때만 담당자 검색창 초기화
-      if(!isRegularAxMember) document.getElementById('memberFilter').value = ''; 
+      if(!isRegularAxMember) {
+        document.getElementById('memberFilter').value = '';
+      }
+
       updateMemberDatalist();
       updateProjectChips();
     }
+
+    renderBoard();
+  }
+
+  function handleMemberFilterInput() {
+    updateMemberDatalist();
     renderBoard();
   }
 
@@ -356,7 +369,7 @@ if(isRegularAxMember) {
     
     // 일반 팀원이면 UI 조작과 무관하게 무조건 session의 본인 이름으로 고정
     const mVal = document.getElementById('memberFilter').value.trim();
-    filters.member = mVal === '' ? '전체' : mVal;
+    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
 
     const filteredTasks = rawData.tasks.filter(t => {
       if(filters.period !== '전체' && t.period !== filters.period) return false;
@@ -467,6 +480,9 @@ if(isRegularAxMember) {
     if(isRegularAxMember) {
       elEdMember.disabled = true;
       elEdMember.classList.add('bg-slate-100', 'cursor-not-allowed');
+    } else {
+      elEdMember.disabled = false;
+      elEdMember.classList.remove('bg-slate-100', 'cursor-not-allowed');
     }
 
     document.getElementById('edId').value = t.id;
