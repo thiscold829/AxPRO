@@ -111,6 +111,15 @@
 
       // 데이터 대조 (강력한 정규식 처리로 오류 원천 차단)
       const user = members.find(m => {
+  console.log(m);
+
+  const mName = (m.name || '').trim();
+  const mMobileOnlyNumbers = String(m.mobile || '').replace(/\D/g, '');
+
+  return mName === inputName &&
+         mMobileOnlyNumbers.endsWith(inputPw) &&
+         inputPw.length === 4;
+});
         const mName = (m.name || '').trim();
         // mobile 컬럼에서 특수문자, 띄어쓰기 등 숫자가 아닌 모든 것을 제거
         const mMobileOnlyNumbers = String(m.mobile || '').replace(/\D/g, ''); 
