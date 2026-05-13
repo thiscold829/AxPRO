@@ -84,8 +84,8 @@
       <div class="w-[1px] h-5 bg-slate-200 shrink-0"></div>
       <div class="flex items-center gap-2.5 shrink-0">
         <span class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Member</span>
-        <!-- 1, 2번 반영: type="search" 제거 및 실시간 oninput 처리 -->
-        <input list="dlMembersFilter" id="memberFilter" class="compact-input py-1 px-3 text-[12px] w-[110px] bg-transparent border-none shadow-none placeholder-slate-400 cursor-text" placeholder="담당자 검색" onclick="this.value=''; handleMemberInput();" oninput="handleMemberInput()">
+        <!-- 공백 시 '전체'로 복구하는 onblur 로직 추가 -->
+        <input list="dlMembersFilter" id="memberFilter" class="compact-input py-1 px-3 text-[12px] w-[110px] bg-transparent border-none shadow-none placeholder-slate-400 cursor-text" placeholder="담당자 검색" onclick="this.value=''; handleMemberInput();" oninput="handleMemberInput()" onblur="if(this.value.trim() === '') { this.value = '전체'; handleMemberInput(); }">
       </div>
     </div>
 
@@ -141,7 +141,8 @@
     
     <div class="flex gap-4 mb-5">
       <input list="dlProjects" id="edProject" class="compact-input flex-1" placeholder="과제명" onclick="this.value=''">
-      <input list="dlMembers" id="edMember" class="compact-input w-[120px]" placeholder="담당자" onclick="if(!this.disabled) this.value=''">
+      <!-- 수정 모달에서도 담당자 변경 제한 해제 -->
+      <input list="dlMembers" id="edMember" class="compact-input w-[120px]" placeholder="담당자" onclick="this.value=''">
     </div>
     <textarea id="edTask" class="compact-input w-full min-h-[100px] resize-none mb-5 text-[14px] leading-relaxed" placeholder="수행할 내용"></textarea>
     
@@ -191,7 +192,7 @@
   let filters = { 
     team: '전체', 
     period: '전체', 
-    member: isRegularAxMember ? currentUser.name : '전체', 
+    member: '전체', // 초기값. 로드 후 applyRoleBasedUI에서 세팅
     selectedProjects: new Set() 
   };
   let isDockOpen = false;
@@ -206,15 +207,19 @@
     
     populateProjectDatalist();
     updateMemberDatalist(); 
+    
+    // 로그인 계정 기준으로 초기값만 세팅 (이후 변경 가능)
     applyRoleBasedUI(); 
     
-    const mVal = document.getElementById('memberFilter').value.trim();
-    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
+    let mVal = document.getElementById('memberFilter').value.trim();
+    if (mVal === '') mVal = '전체';
+    filters.member = mVal;
 
     updateProjectChips(); 
     renderBoard();
   };
 
+  // 초기 로드 시에만 내 이름을 기본값으로 넣어주는 역할로 변경 (잠금 해제)
   function applyRoleBasedUI() {
     const elMemberFilter = document.getElementById('memberFilter');
     const elInMember = document.getElementById('inMember');
@@ -223,8 +228,8 @@
       elMemberFilter.value = currentUser.name;
       elInMember.value = currentUser.name;
     } else {
-      elMemberFilter.value = '';
-      elInMember.value = '';
+      elMemberFilter.value = '전체';
+      elInMember.value = currentUser.name; // 새 업무 등록 담당자 기본값은 본인으로 편의 제공
     }
   }
 
@@ -263,13 +268,15 @@
     }
     const memHTML = targetMembers.map(m => `<option value="${m.name}">`).join('');
     document.getElementById('dlMembers').innerHTML = memHTML;       
-    document.getElementById('dlMembersFilter').innerHTML = memHTML; 
+    
+    // 필터 드롭다운에는 명시적으로 '전체' 옵션 추가
+    document.getElementById('dlMembersFilter').innerHTML = `<option value="전체"></option>` + memHTML; 
   }
 
-  // 2번 반영: 실시간 업데이트를 위한 핸들러
   function handleMemberInput() {
-    const mVal = document.getElementById('memberFilter').value.trim();
-    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
+    let mVal = document.getElementById('memberFilter').value.trim();
+    if (mVal === '') mVal = '전체'; // 잠금 해제: 빈값이면 무조건 '전체' 취급
+    filters.member = mVal;
     updateProjectChips();
     renderBoard();
   }
@@ -285,14 +292,14 @@
     event.target.classList.add('active');
 
     if(type === 'team') {
-      if(!isRegularAxMember) {
-        document.getElementById('memberFilter').value = '';
-      }
       updateMemberDatalist();
+      // 팀 필터 변경 시 담당자 필터도 '전체'로 초기화하여 혼선 방지
+      document.getElementById('memberFilter').value = '전체';
     }
 
-    const mVal = document.getElementById('memberFilter').value.trim();
-    filters.member = isRegularAxMember ? currentUser.name : (mVal === '' ? '전체' : mVal);
+    let mVal = document.getElementById('memberFilter').value.trim();
+    if (mVal === '') mVal = '전체';
+    filters.member = mVal;
 
     updateProjectChips();
     renderBoard();
@@ -301,7 +308,6 @@
   function toggleAllProjects() {
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
     
-    // 3번 반영: 활성화 가능한(조건에 맞는) 프로젝트만 식별
     const selectableProjs = targetProjs.filter(p => {
       return rawData.tasks.some(t => 
         t.project_short === p.short_name &&
@@ -337,11 +343,9 @@
     renderBoard();
   }
 
-  // 3, 4번 반영: 활성화된 사업만 앞쪽으로 정렬하고, 비어있는 것은 비활성화
   function renderProjectChipsUI() {
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
     
-    // 현재 필터조건(Period, Member)에 업무가 하나라도 있는지 검사
     const activeProjs = targetProjs.filter(p => {
       return rawData.tasks.some(t => 
         t.project_short === p.short_name &&
@@ -350,9 +354,8 @@
       );
     });
     
-    // 4번 반영: 비활성된 프로젝트는 뒤로 분리
     const disabledProjs = targetProjs.filter(p => !activeProjs.includes(p));
-    const sortedProjs = [...activeProjs, ...disabledProjs]; // 활성 먼저, 비활성 나중에 배치
+    const sortedProjs = [...activeProjs, ...disabledProjs]; 
     
     const btnToggle = document.getElementById('btnToggleProjects');
     if (activeProjs.length === 0) {
@@ -382,7 +385,6 @@
     }).join('');
   }
 
-  // 필터가 바뀔 때마다 칩도 즉시 초기화/선택
   function updateProjectChips() {
     filters.selectedProjects.clear();
     const targetProjs = filters.team === '전체' ? rawData.projects : rawData.projects.filter(p => p.team === filters.team);
@@ -476,10 +478,11 @@
 
   function addTask() {
     const proj = document.getElementById('inProject').value.trim();
-    const mem = isRegularAxMember ? currentUser.name : document.getElementById('inMember').value.trim();
+    // 잠금 해제: 강제 이름 덮어쓰기 로직 제거
+    const mem = document.getElementById('inMember').value.trim(); 
     const task = document.getElementById('inTask').value.trim();
     
-    if(!proj || !task) return alert("과제명과 업무 내용을 입력하세요.");
+    if(!proj || !task || !mem) return alert("과제명, 담당자, 업무 내용을 모두 입력하세요.");
     
     const newTask = {
       id: 'T-' + Date.now(), project_short: proj, member_name: mem, content: task,
@@ -496,6 +499,8 @@
     document.getElementById('inProgress').value = 0;
     document.getElementById('inStatus').value = '대기';
     document.getElementById('inPriority').value = '중';
+    // 등록 후 편의를 위해 담당자 필드를 다시 본인 이름으로 리셋 (선택사항)
+    document.getElementById('inMember').value = currentUser.name;
     
     updateProjectChips(); renderBoard(); commitToCloud();
   }
@@ -505,13 +510,9 @@
     if(!t) return;
 
     const elEdMember = document.getElementById('edMember');
-    if(isRegularAxMember) {
-      elEdMember.disabled = true;
-      elEdMember.classList.add('bg-slate-100', 'cursor-not-allowed');
-    } else {
-      elEdMember.disabled = false;
-      elEdMember.classList.remove('bg-slate-100', 'cursor-not-allowed');
-    }
+    // 잠금 해제: isRegularAxMember 제어 구문 완전 삭제
+    elEdMember.disabled = false;
+    elEdMember.classList.remove('bg-slate-100', 'cursor-not-allowed');
 
     document.getElementById('edId').value = t.id;
     document.getElementById('edProject').value = t.project_short;
