@@ -5,45 +5,80 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AxPRO | Login</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD@100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
 <script src="config.js"></script>
 <style>
-  body { font-family: 'Pretendard', sans-serif; background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  body { 
+    font-family: 'Pretendard', -apple-system, sans-serif; 
+    /* AxPRO 메인 화면과 완벽히 동일한 우아한 배경 */
+    background-color: #f8fafc; 
+    background-image: linear-gradient(180deg, #e0f2fe 0%, #f8fafc 400px); 
+    background-repeat: no-repeat; 
+    min-height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    -webkit-font-smoothing: antialiased;
+  }
   .ms { font-family: 'Material Symbols Outlined'; vertical-align: middle; }
-  .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-radius: 32px; box-shadow: 0 20px 40px -10px rgba(0, 102, 204, 0.15); border: 1px solid #fff; }
-  .mac-input { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; font-size: 14px; font-weight: 600; outline: none; transition: 0.2s; width: 100%; }
-  .mac-input:focus { background: #fff; border-color: #0066cc; box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1); }
+  
+  /* 고급스러운 애플 스타일 카드 (화려한 효과 제거, 정교한 그림자 추가) */
+  .premium-card { 
+    background: #ffffff; 
+    border-radius: 32px; 
+    box-shadow: 0 30px 60px -15px rgba(0, 102, 204, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03); 
+    border: 1px solid rgba(0, 0, 0, 0.03); 
+  }
+  
+  /* 미니멀한 인풋 디자인 (기본은 테두리 없이 깔끔하게, 포커스 시 우아한 블루 링) */
+  .minimal-input { 
+    background: #f4f4f5; /* zinc-100 */
+    border: 1.5px solid transparent; 
+    border-radius: 14px; 
+    padding: 16px 16px 16px 48px; 
+    font-size: 15px; 
+    font-weight: 600; 
+    color: #1e293b;
+    outline: none; 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+    width: 100%; 
+  }
+  .minimal-input::placeholder { color: #94a3b8; font-weight: 500; }
+  .minimal-input:focus { 
+    background: #ffffff; 
+    border-color: #0066cc; 
+    box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1); 
+  }
 </style>
 </head>
 <body>
 
-<div class="glass-card w-full max-w-[400px] p-10 m-4 flex flex-col items-center text-center">
-  <div class="w-16 h-16 bg-gradient-to-tr from-[#0066cc] to-[#7dd3fc] rounded-2xl flex items-center justify-center shadow-lg mb-6 transform hover:rotate-12 transition">
-    <span class="ms text-white text-[32px]">Settings_Accessibility</span>
-  </div>
+<div class="premium-card w-full max-w-[420px] p-10 m-4 flex flex-col items-center">
   
-  <h1 class="text-3xl font-[900] tracking-tighter text-[#0066cc] mb-1">AxPRO</h1>
-  <p class="text-[12px] font-bold text-slate-500 uppercase tracking-widest mb-1">AX team Progress Report Overview</p>
-  <p class="text-[11px] font-bold text-slate-400 mb-8">AX팀 진행 보고 오버뷰</p>
+  <div class="text-center mb-10 w-full">
+    <h1 class="text-[40px] font-[900] tracking-tighter text-[#0066cc] leading-none mb-3">AxPRO</h1>
+    <p class="text-[13px] font-[700] text-slate-500 tracking-tight">AX team Progress Report Overview</p>
+    <p class="text-[12px] font-[600] text-slate-400 mt-1">AX팀 진행 보고 오버뷰</p>
+  </div>
 
-  <div class="w-full flex flex-col gap-4">
-    <div class="relative">
-      <span class="ms absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">person</span>
-      <input type="text" id="loginName" class="mac-input pl-11" placeholder="이름 (예: 이찬)" onkeypress="if(event.keyCode==13) document.getElementById('loginPw').focus()">
+  <div class="w-full flex flex-col gap-4 mb-8">
+    <div class="relative group">
+      <span class="ms absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[22px] transition group-focus-within:text-[#0066cc]">person</span>
+      <input type="text" id="loginName" class="minimal-input" placeholder="이름 (예: 이찬)" onkeypress="if(event.keyCode==13) document.getElementById('loginPw').focus()">
     </div>
-    <div class="relative">
-      <span class="ms absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">lock</span>
-      <input type="password" id="loginPw" class="mac-input pl-11" placeholder="휴대폰 뒤 4자리" maxlength="4" onkeypress="if(event.keyCode==13) handleLogin()">
+    <div class="relative group">
+      <span class="ms absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px] transition group-focus-within:text-[#0066cc]">lock</span>
+      <input type="password" id="loginPw" class="minimal-input" placeholder="휴대폰 번호 뒤 4자리" maxlength="4" onkeypress="if(event.keyCode==13) handleLogin()">
     </div>
   </div>
 
-  <button id="btnLogin" onclick="handleLogin()" class="w-full mt-8 bg-slate-800 text-white font-bold text-[15px] py-4 rounded-xl hover:bg-[#0066cc] transition shadow-lg flex justify-center items-center gap-2">
-    <span>로그인</span> 
+  <button id="btnLogin" onclick="handleLogin()" class="w-full bg-[#0066cc] text-white font-[700] text-[15px] py-4 rounded-2xl hover:bg-[#005bb5] transition-all active:scale-[0.98] shadow-md hover:shadow-lg flex justify-center items-center gap-2">
+    <span>로그인 시작</span> 
     <span class="ms text-[18px]">arrow_forward</span>
   </button>
 
-  <p id="errorMsg" class="mt-4 text-rose-500 text-[12px] font-bold hidden"></p>
+  <p id="errorMsg" class="mt-5 text-rose-500 text-[13px] font-bold text-center hidden"></p>
 </div>
 
 <script>
@@ -51,18 +86,21 @@
   if(sessionStorage.getItem('axUser')) location.replace('axpro.html');
 
   async function handleLogin() {
-    const name = document.getElementById('loginName').value.trim();
-    const pw = document.getElementById('loginPw').value.trim();
+    const inputName = document.getElementById('loginName').value.trim();
+    const inputPw = document.getElementById('loginPw').value.trim();
     const btn = document.getElementById('btnLogin');
     const err = document.getElementById('errorMsg');
     
-    if(!name || !pw) {
-      err.textContent = "이름과 비밀번호(휴대폰 4자리)를 입력하세요.";
-      err.classList.remove('hidden'); return;
+    if(!inputName || !inputPw) {
+      showError("이름과 휴대폰 번호 4자리를 정확히 입력하세요.");
+      return;
     }
 
-    btn.innerHTML = `<span class="ms animate-spin">refresh</span> 인증 중...`;
+    // 로딩 상태 UI 처리
+    btn.innerHTML = `<span class="ms animate-spin">refresh</span> <span>인증 중...</span>`;
     btn.disabled = true;
+    btn.classList.add('opacity-80', 'cursor-not-allowed');
+    err.classList.add('hidden');
 
     try {
       if(typeof CONFIG === 'undefined' || !CONFIG.SHEET_ID) throw new Error("config.js 설정 오류");
@@ -71,34 +109,46 @@
       const text = await res.text();
       const members = parseCSV(text);
 
-      // 하이픈(-) 제외하고 숫자만 뽑아서 뒤 4자리 비교
+      // 데이터 대조 (강력한 정규식 처리로 오류 원천 차단)
       const user = members.find(m => {
-        if(!m.name || !m.mobile) return false;
-        const mobileNum = m.mobile.replace(/\\D/g, ''); // 숫자만 추출
-        return m.name === name && mobileNum.slice(-4) === pw;
+        const mName = (m.name || '').trim();
+        // mobile 컬럼에서 특수문자, 띄어쓰기 등 숫자가 아닌 모든 것을 제거
+        const mMobileOnlyNumbers = String(m.mobile || '').replace(/\\D/g, ''); 
+        
+        // 이름이 정확히 일치하고, 추출된 휴대폰 번호가 입력한 4자리로 끝나는지 확인
+        return mName === inputName && mMobileOnlyNumbers.endsWith(inputPw) && inputPw.length === 4;
       });
       
       if(user) {
-        // 인증 성공 시 세션에 유저 정보(JSON) 저장 후 대시보드로 이동
+        // 인증 성공
         sessionStorage.setItem('axUser', JSON.stringify(user));
         location.replace('axpro.html');
       } else {
-        err.textContent = "등록되지 않은 이름이거나 휴대폰 번호가 일치하지 않습니다.";
-        err.classList.remove('hidden');
-        btn.innerHTML = `<span>로그인</span> <span class="ms text-[18px]">arrow_forward</span>`;
-        btn.disabled = false;
+        showError("등록되지 않은 직원이거나 휴대폰 번호가 일치하지 않습니다.");
       }
     } catch(e) {
-      err.textContent = "서버 접속 오류: " + e.message;
-      err.classList.remove('hidden');
-      btn.innerHTML = `<span>로그인</span> <span class="ms text-[18px]">arrow_forward</span>`;
-      btn.disabled = false;
+      showError("DB 연결 실패: 권한 설정이나 인터넷 연결을 확인하세요.");
+      console.error(e);
     }
   }
 
+  function showError(msg) {
+    const err = document.getElementById('errorMsg');
+    const btn = document.getElementById('btnLogin');
+    err.textContent = msg;
+    err.classList.remove('hidden');
+    btn.innerHTML = `<span>로그인 시작</span> <span class="ms text-[18px]">arrow_forward</span>`;
+    btn.disabled = false;
+    btn.classList.remove('opacity-80', 'cursor-not-allowed');
+  }
+
+  // 오류 방지를 위해 모든 헤더(컬럼명)를 강제로 소문자로 변환하여 파싱
   function parseCSV(t) {
     const lines = t.trim().split('\\n'); if(lines.length < 2) return [];
-    const hdrs = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    
+    // 컬럼명 대소문자 오타 방지를 위해 무조건 소문자 처리 (Name -> name, Mobile -> mobile)
+    const hdrs = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    
     return lines.slice(1).map(l => {
       const v = []; let c = '', q = false;
       for(let i=0; i<l.length; i++) { 
@@ -108,7 +158,9 @@
         else c += ch; 
       }
       v.push(c.trim()); 
-      const o = {}; hdrs.forEach((h, i) => o[h] = (v[i] || '').replace(/^"|"$/g, '')); return o;
+      const o = {}; 
+      hdrs.forEach((h, i) => o[h] = (v[i] || '').replace(/^"|"$/g, '')); 
+      return o;
     }).filter(row => Object.values(row).some(val => val !== '')); 
   }
 </script>
