@@ -113,7 +113,7 @@
       const user = members.find(m => {
         const mName = (m.name || '').trim();
         // mobile 컬럼에서 특수문자, 띄어쓰기 등 숫자가 아닌 모든 것을 제거
-        const mMobileOnlyNumbers = String(m.mobile || '').replace(/\\D/g, ''); 
+        const mMobileOnlyNumbers = String(m.mobile || '').replace(/\D/g, ''); 
         
         // 이름이 정확히 일치하고, 추출된 휴대폰 번호가 입력한 4자리로 끝나는지 확인
         return mName === inputName && mMobileOnlyNumbers.endsWith(inputPw) && inputPw.length === 4;
@@ -159,7 +159,7 @@
       }
       v.push(c.trim()); 
       const o = {}; 
-      hdrs.forEach((h, i) => o[h] = (v[i] || '').replace(/^"|"$/g, '')); 
+      hdrs.forEach((h, i) => o[h] = (v[i] || '').replace(/^"|"$/g, '').trim()); 
       return o;
     }).filter(row => Object.values(row).some(val => val !== '')); 
   }
