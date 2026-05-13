@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AxPRO | Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD@100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<script src="config.js"></script>
+<style>
+  body { font-family: 'Pretendard', sans-serif; background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .ms { font-family: 'Material Symbols Outlined'; vertical-align: middle; }
+  .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-radius: 32px; box-shadow: 0 20px 40px -10px rgba(0, 102, 204, 0.15); border: 1px solid #fff; }
+  .mac-input { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; font-size: 14px; font-weight: 600; outline: none; transition: 0.2s; width: 100%; }
+  .mac-input:focus { background: #fff; border-color: #0066cc; box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1); }
+</style>
+</head>
+<body>
+
+<div class="glass-card w-full max-w-[400px] p-10 m-4 flex flex-col items-center">
+  <div class="w-16 h-16 bg-gradient-to-tr from-[#0066cc] to-[#7dd3fc] rounded-2xl flex items-center justify-center shadow-lg mb-6 transform hover:rotate-12 transition">
+    <span class="ms text-white text-[32px]">dashboard</span>
+  </div>
+  
+  <h1 class="text-3xl font-[900] tracking-tighter text-slate-800 mb-1">AxPRO</h1>
+  <p class="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-8">Workspace Login</p>
+
+  <div class="w-full flex flex-col gap-4">
+    <div class="relative">
+      <span class="ms absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">person</span>
+      <input type="text" id="loginName" class="mac-input pl-11" placeholder="이름 (예: 이찬)" onkeypress="if(event.keyCode==13) document.getElementById('loginPw').focus()">
+    </div>
+    <div class="relative">
+      <span class="ms absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">lock</span>
+      <input type="password" id="loginPw" class="mac-input pl-11" placeholder="휴대폰 뒤 4자리" maxlength="4" onkeypress="if(event.keyCode==13) handleLogin()">
+    </div>
+  </div>
+
+  <button id="btnLogin" onclick="handleLogin()" class="w-full mt-8 bg-slate-800 text-white font-bold text-[15px] py-4 rounded-xl hover:bg-[#0066cc] transition shadow-lg flex justify-center items-center gap-2">
+    <span>로그인</span> <span class="ms text-[18px]">arrow_forward</span>
+  </button>
+
+  <p id="errorMsg" class="mt-4 text-rose-500 text-[12px] font-bold hidden"></p>
+</div>
+
+<script>
+  // 이미 로그인 되어있으면 메인으로 튕겨냄
+  if(sessionStorage.getItem('axUser')) location.replace('axpro.html');
+
+  async function handleLogin() {
+    const name = document.getElementById('loginName').value.trim();
+    const pw = document.getElementById('loginPw').value.trim();
+    const btn = document.getElementById('btnLogin');
+    const err = document.getElementById('errorMsg');
+    
+    if(!name || !pw) {
+      err.textContent = "이름과 비밀번호(휴대폰 4자리)를 입력하세요.";
+      err.classList.remove('hidden'); return;
+    }
+
+    btn.innerHTML = `<span class="ms animate-spin">refresh</span> 인증 중...`;
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=members`);
+      const text = await res.text();
+      const members = parseCSV(text);
+
+      // 이름과 휴대폰 뒤 4자리 매칭 검사
+      const user = members.find(m => m.name === name && m.mobile && m.mobile.slice(-4) === pw);
+      
+      if(user) {
+        // 성공 시 세션스토리지에 저장 후 이동
+        sessionStorage.setItem('axUser', JSON
