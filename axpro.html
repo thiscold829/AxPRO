@@ -221,7 +221,7 @@
     const elInMember = document.getElementById('inMember');
 
     if(isRegularAxMember) {
-      // 1. 담당자 검색창(필터) 자기 이름으로 잠금
+      // 1. 담당자 검색창(필터) 자기 이름으로 잠금(최초 설정이나, 이후 수정가능하게 패치 예정)
       elMemberFilter.value = currentUser.name;
       elMemberFilter.disabled = true;
       elMemberFilter.classList.add('opacity-60', 'cursor-not-allowed');
