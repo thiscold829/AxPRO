@@ -329,7 +329,7 @@
     filters[type] = value;
     if(btn) { btn.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); }
     if(type==='memberTeam') { filters.member='전체'; renderMemberDropdowns(); }
-    if(type==='projectTeam') updateProjectChips();
+    updateProjectChips();
     renderBoard();
   }
 
@@ -366,7 +366,11 @@
     if(sel.length===0){btn.textContent='선택 불가';btn.classList.add('opacity-40','cursor-not-allowed');btn.classList.remove('hover:bg-slate-300');}
     else if(filters.selectedProjects.size===sel.length){btn.textContent='전체 해제';btn.classList.remove('opacity-40','cursor-not-allowed');btn.classList.add('hover:bg-slate-300');}
     else{btn.textContent='전체 선택';btn.classList.remove('opacity-40','cursor-not-allowed');btn.classList.add('hover:bg-slate-300');}
-    document.getElementById('projectFilters').innerHTML = projs.map(p => {
+    const sorted = [
+      ...projs.filter(p => active.some(t => t.project_short === p.short_name)),
+      ...projs.filter(p => !active.some(t => t.project_short === p.short_name))
+    ];
+    document.getElementById('projectFilters').innerHTML = sorted.map(p => {
       const cnt = active.filter(t=>t.project_short===p.short_name).length;
       if(cnt===0) return `<button class="chip chip-multi opacity-40 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400">${p.short_name}</button>`;
       const s = filters.selectedProjects.has(p.short_name);
