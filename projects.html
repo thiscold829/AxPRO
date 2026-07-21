@@ -127,7 +127,8 @@
     else if(r.status==='error'){ toast('거부: '+(r.error||'')+' — 새로고침합니다.'); init(); } });
 
   window.onload = init;
-  async function init(){ const res=await AX.pull(['projects']); projects=(res.data.projects||[]).filter(p=>p.deleted!==true).sort((a,b)=>(+a.order||999)-(+b.order||999)); render(); }
+  function isDel(v){ if(v===true) return true; if(typeof v==='string'){ var s=v.trim().toUpperCase(); return s==='TRUE'||s==='1'||s==='Y'||s==='YES'; } return false; }
+  async function init(){ const res=await AX.pull(['projects']); projects=(res.data.projects||[]).filter(p=>!isDel(p.deleted)).sort((a,b)=>(+a.order||999)-(+b.order||999)); render(); }
 
   function render(){
     document.getElementById('cnt').textContent=`총 ${projects.length}개`;

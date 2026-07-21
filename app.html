@@ -381,7 +381,8 @@
     else if(!c.hasCache){ applyData(res.data); mountUI(); if(!res.hasCache) toast('연결 실패 — 표시할 캐시가 없습니다.'); }  // 캐시·네트워크 모두 없음
     AX.drain();
   }
-  function nd(r){ return r.deleted!==true && r.deleted!=='TRUE'; }
+  function isDel(v){ if(v===true) return true; if(typeof v==='string'){ var s=v.trim().toUpperCase(); return s==='TRUE'||s==='1'||s==='Y'||s==='YES'; } return false; }
+  function nd(r){ return !isDel(r.deleted); }   // 삭제 플래그: 불리언·대소문자·1/Y 모두 인식(소문자 'true' 저장분 포함)
   function normE(t){ t.progress=(t.progress===''||t.progress==null)?0:+t.progress; return t; }
 
   function defDdl(){ return scope==='주간'?weekFriOf(activeDate):activeDate; }   // 마감일 기본=조회 중인 날/주

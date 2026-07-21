@@ -4,5 +4,5 @@
 //
 // 이 값이 비어 있으면 로그인 화면에 "설정 필요" 안내가 뜨고 접속이 막힙니다.
 window.AX_CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbyMQFnSKEcM03E06DrFRfJQlmO6JQO8de_caOAIz-KgWglAQZfz7vlTJzVjnQDlhp9pcw/exec'
+  API_URL: 'https://script.google.com/macros/s/AKfycbwKO8aqojcRfFY3hpTucIi5A_EA7DtYFg7L_OHvu4wQxiQldXPdE_Eegx1Z8iiq1forBA/exec'
 };

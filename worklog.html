@@ -165,10 +165,11 @@
     if(!res.fromCache){ apply(res.data); render(); }
     else if(!c.hasCache){ apply(res.data); render(); if(!res.hasCache && !AX.configured){ document.getElementById('setupNotice').style.display='block'; } }
   }
+  function isDel(v){ if(v===true) return true; if(typeof v==='string'){ var s=v.trim().toUpperCase(); return s==='TRUE'||s==='1'||s==='Y'||s==='YES'; } return false; }
   function apply(data){
-    entries=(data.entries||[]).filter(t=>t.deleted!==true && t.deleted!=='TRUE' && t.member===ME)
+    entries=(data.entries||[]).filter(t=>!isDel(t.deleted) && t.member===ME)
       .map(t=>{ t.progress=(t.progress===''||t.progress==null)?0:+t.progress; return t; });
-    projects=(data.projects||[]).filter(p=>p.deleted!==true && p.deleted!=='TRUE').sort((a,b)=>(+a.order||999)-(+b.order||999));
+    projects=(data.projects||[]).filter(p=>!isDel(p.deleted)).sort((a,b)=>(+a.order||999)-(+b.order||999));
   }
 
   function inRange(d){ if(fStart && d<fStart) return false; if(fEnd && d>fEnd) return false; return true; }
