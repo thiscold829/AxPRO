@@ -118,6 +118,25 @@
   .mgr-title{ font-size:19px; font-weight:900; letter-spacing:-.02em; margin:0 0 3px; }
   .mgr-sub{ font-size:12.5px; color:var(--muted); font-weight:700; margin-bottom:18px; }
   .mgr-copy{ float:right; font-size:12px; font-weight:800; color:#fff; background:#151a22; padding:8px 15px; border-radius:9px; display:inline-flex; gap:6px; align-items:center; }
+  .mgr-add{ float:right; margin-left:8px; font-size:12px; font-weight:800; color:#fff; background:var(--brand); padding:8px 15px; border-radius:9px; } .mgr-add:hover{ background:#0059b3; }
+  /* 편집 진입 표시(관리자) */
+  table.st tr.editrow{ cursor:pointer; } table.st tr.editrow:hover td{ background:#eef6ff; }
+  .cellline.editline{ cursor:pointer; border-radius:5px; padding-left:3px; } .cellline.editline:hover{ background:#eef6ff; }
+  /* 편집 모달 */
+  .medlg{ position:fixed; inset:0; background:rgba(15,23,42,.4); backdrop-filter:blur(4px); z-index:500; display:none; align-items:center; justify-content:center; padding:16px; }
+  .medlg.active{ display:flex; }
+  .medlg-box{ background:#fff; border-radius:16px; width:100%; max-width:540px; padding:22px 24px; box-shadow:0 24px 60px -14px rgba(0,0,0,.4); max-height:92vh; overflow:auto; }
+  .medlg-h{ display:flex; align-items:center; justify-content:space-between; font-size:16px; font-weight:900; margin-bottom:16px; }
+  .medlg-x{ color:var(--muted); background:transparent; padding:4px; border-radius:7px; } .medlg-x:hover{ color:var(--prob); }
+  .mefrow{ display:flex; gap:8px; } .mefrow>*{ flex:1; min-width:0; }
+  .mefld{ margin-bottom:10px; } .mefld label{ font-size:10.5px; font-weight:800; color:var(--muted); display:block; margin:0 0 3px 2px; }
+  .mefi{ width:100%; border:1px solid var(--line); background:#fff; border-radius:9px; font-size:13px; font-weight:600; padding:9px 10px; outline:0; color:var(--ink); font-family:inherit; }
+  select.mefi{ font-weight:800; cursor:pointer; }
+  .medlg-foot{ display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .medlg-del{ color:var(--prob); background:#fdeceb; font-size:13px; font-weight:800; padding:9px 16px; border-radius:9px; } .medlg-del:hover{ background:#fbd9d6; }
+  .medlg-cancel{ background:#eef1f6; color:#5a616e; font-size:13px; font-weight:800; padding:9px 16px; border-radius:9px; }
+  .medlg-save{ background:var(--brand); color:#fff; font-size:13px; font-weight:800; padding:9px 24px; border-radius:9px; } .medlg-save:hover{ background:#0059b3; }
+  @media (prefers-color-scheme:dark){ .medlg-box{ background:#161922; } .mefi{ background:#20242e; color:#eef1f6; border-color:#282c36; } .medlg-cancel{ background:#20242e; color:#c7ccd6; } table.st tr.editrow:hover td{ background:rgba(0,102,204,.16); } .cellline.editline:hover{ background:rgba(0,102,204,.16); } }
 
   #toast{ position:fixed; top:16px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:11px 22px; border-radius:99px; font-size:13px; font-weight:700; opacity:0; transition:.35s; z-index:400; box-shadow:0 10px 24px rgba(0,0,0,.18); pointer-events:none; max-width:90vw; }
   #toast.show{ opacity:1; transform:translateX(-50%) translateY(6px); }
@@ -169,6 +188,7 @@
     <button class="todaybtn" id="todayBtn" onclick="goToday()">오늘</button>
   </span>
   <span class="grow"></span>
+  <a id="worklogLink" href="worklog.html" title="일별·사업별 내 업무일지 조회" style="background:#eef2f8;color:#0066cc;font-size:12.5px;font-weight:800;padding:8px 15px;border-radius:9px;display:inline-flex;align-items:center;gap:6px"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit_note"/></svg> 나의 기록 조회</a>
   <button id="modeBtn" onclick="toggleMode()" style="display:none;background:#151a22;color:#fff;font-size:12.5px;font-weight:800;padding:8px 15px;border-radius:9px;display:none;align-items:center;gap:6px"></button>
   <span class="pill" id="statusPill"><span class="pdot" id="pdot"></span><span id="statusText">저장됨</span></span>
   <span class="who" id="whoLbl"></span>
@@ -234,6 +254,35 @@
   <div class="mgrbody"><div class="mgr-sheet" id="mgrSheet"></div></div>
 </div>
 
+<!-- 관리자 업무 편집 모달 -->
+<div class="medlg" id="mgrEditModal">
+  <div class="medlg-box">
+    <div class="medlg-h"><span id="meTitle">업무 수정</span><button class="medlg-x" title="닫기" onclick="closeMgrEdit()"><svg class="ic"><use href="#i-close"/></svg></button></div>
+    <input type="hidden" id="meId">
+    <div class="mefrow">
+      <div class="mefld"><label>담당자</label><select id="meMember" class="mefi"></select></div>
+      <div class="mefld"><label>사업</label><select id="meProj" class="mefi"></select></div>
+    </div>
+    <div class="mefrow">
+      <div class="mefld"><label>구분</label><select id="meKind" class="mefi"><option value="일간">일간</option><option value="주간">주간</option></select></div>
+      <div class="mefld"><label>날짜</label><input id="meDate" type="date" class="mefi"></div>
+      <div class="mefld"><label>마감일</label><input id="meDdl" type="date" class="mefi"></div>
+    </div>
+    <div class="mefld"><label>세부내용</label><input id="meCont" class="mefi" placeholder="수행 또는 예정 업무" onkeypress="if(event.key==='Enter')mgrSaveEntry()"></div>
+    <div class="mefld"><label>비고</label><input id="meNote" class="mefi" placeholder="from/to, 후속 등 (선택)"></div>
+    <div class="mefrow">
+      <div class="mefld"><label>진행상태</label><select id="meSt" class="mefi"></select></div>
+      <div class="mefld"><label>진행도</label><select id="mePg" class="mefi"><option>0</option><option>25</option><option>50</option><option>75</option><option>100</option></select></div>
+    </div>
+    <div class="medlg-foot">
+      <button class="medlg-del" id="meDel" onclick="mgrDeleteEntry()">삭제</button>
+      <div style="flex:1"></div>
+      <button class="medlg-cancel" onclick="closeMgrEdit()">취소</button>
+      <button class="medlg-save" onclick="mgrSaveEntry()">저장</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <script src="config.js"></script>
 <script src="common.js"></script>
@@ -249,7 +298,6 @@
 
   function pad(n){return(n<10?'0':'')+n;}
   function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-  function weekMon(){var d=new Date();var D=(d.getDay()+6)%7;d.setDate(d.getDate()-D);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
   const TODAY=today();
   // ── 날짜 조회 축(worklog식): activeDate 기준 일간=그 날짜만, 주간=그 주만 ──
   let activeDate=TODAY;
@@ -268,6 +316,8 @@
   const TEAM_ORDER={ 'PEO':0, '식품AX':1, '환경AX':2 };   // 엑셀 열 순서: PEO · 식품AX · 환경AX
   function teamSort(a,b){ return (TEAM_ORDER[a]==null?9:TEAM_ORDER[a])-(TEAM_ORDER[b]==null?9:TEAM_ORDER[b]); }
   function projBy(short){ return rawData.projects.find(p=>p.short_name===short)||{}; }
+  // byP(사업별 그룹)의 프로젝트들을 정렬순으로. 미등록(삭제/개명)된 사업의 업무도 절대 사라지지 않게 뒤에 붙임
+  function projGroups(byP){ const known=rawData.projects.filter(function(p){return Object.prototype.hasOwnProperty.call(byP,p.short_name);}); const extra=Object.keys(byP).filter(k=>!known.some(p=>p.short_name===k)).map(k=>({short_name:k,full_name:''})); return known.concat(extra); }
   // 담당과제 = projects DB의 담당자(manager) 기준 (부담당자: 콤마/슬래시/가운뎃점 구분 다중 이름 지원). 프로젝트 정렬순 유지
   function assignedProjects(name){ return rawData.projects.filter(p=>{ const mg=String(p.manager||''); return mg===name || mg.split(/[,/·、]/).some(s=>s.trim()===name); }).map(p=>p.short_name); }
 
@@ -280,7 +330,6 @@
   let scope='일간', rtab='보고', mode='내업무', mView='보고', mGroup='사업별', mRep='팀별', mTeam=null;
   let form={status:'진행중', progress:0};
   const pendingSnap={};
-  const isChief = /실장|본부장|대표|사장|부사장|전무|상무|이사/.test((currentUser.rank||'')+' '+(currentUser.role||''));
 
   // ---- 저장 상태 ----
   AX.onStatus(function(s){
@@ -351,9 +400,10 @@
     pickSt('진행중',document.querySelector('#fSt [data-s="진행중"]')); pickPg(0,document.querySelector('#fPg [data-p="0"]'));
   }
   function saveView(){ try{ sessionStorage.setItem('ax_view', JSON.stringify({mode:mode,mView:mView,mGroup:mGroup,mRep:mRep,mTeam:mTeam,scope:scope,rtab:rtab})); }catch(e){} }
-  function restoreView(){ try{ var v=JSON.parse(sessionStorage.getItem('ax_view')||'null'); if(!v)return; if(v.mode)mode=v.mode; if(v.mView)mView=v.mView; if(v.mGroup)mGroup=v.mGroup; if(v.mRep)mRep=v.mRep; if(v.mTeam)mTeam=v.mTeam; if(v.scope)scope=v.scope; if(v.rtab)rtab=v.rtab; document.getElementById('kindLbl').textContent=scope; }catch(e){} }
+  function restoreView(){ try{ var v=JSON.parse(sessionStorage.getItem('ax_view')||'null'); if(!v)return; /* mode 는 복원 안 함: 로그인/새로고침 시 항상 '내 업무'로 시작 */ if(v.mView)mView=v.mView; if(v.mGroup)mGroup=v.mGroup; if(v.mRep)mRep=v.mRep; if(v.scope)scope=v.scope; if(v.rtab)rtab=v.rtab; document.getElementById('kindLbl').textContent=scope; }catch(e){} }
   function syncToggles(){ var act=function(sel,val){ document.querySelectorAll(sel+' button').forEach(function(b){ b.classList.toggle('on',(b.getAttribute('onclick')||'').indexOf("'"+val+"'")>-1); }); }; act('#scopeWrap',scope); act('#mgrView',mView); act('#mgrGroup',mGroup); act('#mgrRep',mRep); document.querySelectorAll('#mgrTeam button').forEach(function(b){ b.classList.toggle('on',(mTeam==='전체'&&b.textContent==='전체')||(mTeam!=='전체'&&b.textContent.indexOf(mTeam)===0)); }); }
   function applyMode(){
+    if(mode==='관리' && !isManager) mode='내업무';   // 권한 없으면 관리화면 진입 차단(방어)
     const mine = mode==='내업무';
     document.getElementById('memberStage').style.display=mine?'grid':'none';
     document.getElementById('managerStage').style.display=mine?'none':'grid';
@@ -364,7 +414,7 @@
     upTitle(); renderDateNav(); mine?renderMember():renderManager();
     saveView();
   }
-  function toggleMode(){ mode=mode==='내업무'?'관리':'내업무'; applyMode(); }
+  function toggleMode(){ if(!isManager) return; mode=mode==='내업무'?'관리':'내업무'; applyMode(); }
   function upTitle(){ document.getElementById('todayLbl').textContent=(mode==='관리'?'업무관리':'내 업무'); }
   function setScope(v,b){ scope=v; document.querySelectorAll('#scopeWrap button').forEach(x=>x.classList.remove('on')); if(b)b.classList.add('on'); document.getElementById('kindLbl').textContent=v; if(!editingId)document.getElementById('fDdl').value=defDdl(); upTitle(); renderDateNav(); renderMember(); saveView(); }
   // ── 날짜 네비게이터 ──
@@ -382,7 +432,7 @@
   function pickSt(s,b){ form.status=s; document.querySelectorAll('#fSt button').forEach(x=>{x.classList.remove('on');x.style.background='';}); b.classList.add('on'); b.style.background=STCOLOR[s]+'22'; if(s==='완료'){form.progress=100;syncPg();} }
   function pickPg(v,b){ form.progress=v; syncPg(); }
   function syncPg(){ document.querySelectorAll('#fPg button').forEach(x=>x.classList.toggle('on',+x.dataset.p===form.progress)); }
-  function rerender(){ isManager?renderManager():renderMember(); }
+  function rerender(){ mode==='관리'?renderManager():renderMember(); }   // 현재 화면 기준(관리자도 내업무 화면이면 보드 갱신)
 
   // ---- 저장 (단일 경로) ----
   let editingId=null;
@@ -452,7 +502,7 @@
     const byP={}; mine.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
     let h=`<div class="cH"><h2>내 ${scope} 진행현황</h2><span style="font-size:12px;color:var(--muted);font-weight:700">${mine.length}건 · 사업 ${Object.keys(byP).length}개</span></div>`;
     if(!mine.length) h+=`<div class="rep-none" style="margin-top:30px">${scope} 기록이 없어요. 왼쪽에서 한 줄 적어보세요.</div>`;
-    rawData.projects.filter(p=>byP[p.short_name]).forEach(p=>{
+    projGroups(byP).forEach(p=>{
       const its=byP[p.short_name].sort((a,b)=>order[a.status]-order[b.status]);
       h+=`<div class="pgrp"><div class="pgrp-h"><span class="ptag">${esc(p.short_name)}</span><span class="pf">${esc(p.full_name||'')}</span></div>`;
       its.forEach(t=>{ const done=t.status==='완료'; const od=t.deadline&&String(t.deadline).length>=10&&t.deadline<TODAY&&!done;
@@ -479,15 +529,81 @@
     const teamMembers=rawData.members.filter(m=>{ const t=memTeam(m.name); return t!==null && (mTeam==='전체'||t.indexOf(mTeam)===0); }).map(m=>m.name);
     const title = mView==='보고'?'일일 업무보고':mView==='일간'?'일일 업무진행현황':'주간 업무진행현황';
     const teamLbl = mTeam==='전체'?'식품AX+환경AX':mTeam+'AX';
-    const sub = TODAY.replace(/-/g,'.')+' · '+teamLbl+(mView==='보고'?' · '+mRep:' · '+mGroup);
+    const dateLbl = activeKind()==='주간' ? (weekMonOf(activeDate).slice(5).replace('-','.')+'~'+weekFriOf(activeDate).slice(5).replace('-','.')) : activeDate.replace(/-/g,'.');
+    const sub = dateLbl+' · '+teamLbl+(mView==='보고'?' · '+mRep:' · '+mGroup);   // 조회 중인 날/주 기준 라벨
     const bodyHtml = mView==='보고' ? (mRep==='팀별'?reportTeamGrid(teamMembers):reportPersonGrid(teamMembers)) : statusTable(mView,mGroup,teamMembers);
     const copyBtn = mView==='보고' ? `<button class="mgr-copy" onclick="copyReport('manager')"><svg class="ic" style="width:14px;height:14px"><use href="#i-content_copy"/></svg> 이행내용 복사</button>` : '';
-    document.getElementById('mgrSheet').innerHTML=copyBtn+`<div class="mgr-title">${title}</div><div class="mgr-sub">${esc(sub)}</div>${bodyHtml}`;
+    const addBtn = `<button class="mgr-add" onclick="openMgrEdit('')">＋ 업무 추가</button>`;   // 관리자 직접 추가
+    document.getElementById('mgrSheet').innerHTML=copyBtn+addBtn+`<div class="mgr-title">${title}</div><div class="mgr-sub">${esc(sub)} · <span style="color:var(--brand)">항목 클릭 시 수정</span></div>${bodyHtml}`;
   }
   function setMView(v,b){ mView=v; document.querySelectorAll('#mgrView button').forEach(x=>x.classList.remove('on'));b.classList.add('on'); renderDateNav(); renderManager(); saveView(); }
   function setMGroup(v,b){ mGroup=v; document.querySelectorAll('#mgrGroup button').forEach(x=>x.classList.remove('on'));b.classList.add('on'); renderManager(); saveView(); }
   function setMRep(v,b){ mRep=v; document.querySelectorAll('#mgrRep button').forEach(x=>x.classList.remove('on'));b.classList.add('on'); renderManager(); saveView(); }
   function setMTeam(v,b){ mTeam=v; document.querySelectorAll('#mgrTeam button').forEach(x=>x.classList.remove('on'));b.classList.add('on'); renderManager(); saveView(); }
+
+  // ===== 관리자 업무 편집(추가/수정/삭제) — 기존 저장 파이프라인(patchEntry/deleteEntry/enqueue) 재사용 =====
+  function buildMgrSelects(){
+    const mem=rawData.members.filter(m=>memTeam(m.name)!==null);   // AxPRO 범위(PE실) 구성원만
+    document.getElementById('meMember').innerHTML='<option value="">담당자 선택</option>'+mem.map(m=>`<option value="${esc(m.name)}">${esc(m.name)} ${esc(m.rank||'')} · ${esc(memTeam(m.name))}</option>`).join('');
+    const ps=[...rawData.projects]; const teams=[...new Set(ps.map(p=>p.team||'기타'))];
+    document.getElementById('meProj').innerHTML='<option value="">사업 선택</option>'+teams.map(tm=>'<optgroup label="'+esc(tm)+'">'+ps.filter(p=>(p.team||'기타')===tm).map(p=>`<option value="${esc(p.short_name)}">${esc(p.short_name)} · ${esc(p.full_name||'')}</option>`).join('')+'</optgroup>').join('');
+    document.getElementById('meSt').innerHTML=STATUS.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+  function openMgrEdit(id){
+    if(!isManager) return;   // 권한 없으면 무시(방어)
+    buildMgrSelects();
+    const t = id ? rawData.entries.find(x=>x.id===id) : null;
+    const c = t || { member:'', project:'', kind:activeKind(), date:activeDate, content:'', deadline:'', status:'진행중', progress:0, note:'' };
+    document.getElementById('meId').value = t?id:'';
+    document.getElementById('meTitle').textContent = t?'업무 수정':'새 업무 추가';
+    document.getElementById('meDel').style.display = t?'inline-block':'none';
+    document.getElementById('meMember').value=c.member||'';
+    document.getElementById('meProj').value=c.project||'';
+    document.getElementById('meKind').value=(c.kind==='주간'?'주간':'일간');
+    document.getElementById('meDate').value=(c.date&&String(c.date).length>=10)?c.date:activeDate;
+    document.getElementById('meDdl').value=(c.deadline&&String(c.deadline).length>=10)?c.deadline:'';
+    document.getElementById('meCont').value=c.content||'';
+    document.getElementById('meNote').value=c.note||'';
+    document.getElementById('meSt').value=STATUS.indexOf(c.status)>-1?c.status:'진행중';
+    document.getElementById('mePg').value=String(c.progress!=null?c.progress:0);
+    document.getElementById('mgrEditModal').classList.add('active');
+    setTimeout(function(){ document.getElementById(t?'meCont':'meMember').focus(); },30);
+  }
+  function closeMgrEdit(){ document.getElementById('mgrEditModal').classList.remove('active'); }
+  function mgrSaveEntry(){
+    if(!isManager) return;
+    const id=document.getElementById('meId').value;
+    const member=document.getElementById('meMember').value;
+    const project=document.getElementById('meProj').value;
+    const content=document.getElementById('meCont').value.trim();
+    const rawDate=document.getElementById('meDate').value;
+    const kind=document.getElementById('meKind').value==='주간'?'주간':'일간';
+    if(!member) return toast('담당자를 선택하세요.');
+    if(!project) return toast('사업을 선택하세요.');
+    if(!content) return toast('세부내용을 입력하세요.');
+    if(!rawDate) return toast('날짜를 선택하세요.');
+    const p=projBy(project);
+    const st=document.getElementById('meSt').value;
+    const pg=st==='완료'?100:(+document.getElementById('mePg').value||0);
+    const fields={ member, project, team:p.team||memTeam(member)||'', content, kind,
+      date:(kind==='주간'?weekMonOf(rawDate):rawDate),
+      deadline:document.getElementById('meDdl').value, status:st, progress:pg, note:document.getElementById('meNote').value.trim() };
+    if(id){ patchEntry(id, fields); }   // 수정: rev-게이트 낙관적 반영
+    else {                               // 추가: create 경로(부원 아무나 지정 가능)
+      const nid='E-'+AX.uuid();
+      rawData.entries.unshift(normE(Object.assign({id:nid,rev:0,deleted:false,updated_at:new Date().toISOString(),updated_by:ME},fields)));
+      const opId=AX.enqueue({ sheet:'entries', type:'upsert', id:nid, baseRev:0, fields });
+      pendingSnap[opId]={kind:'create',id:nid};
+      renderManager();
+    }
+    closeMgrEdit();
+    toast(id?'수정했습니다.':'추가했습니다.');
+  }
+  function mgrDeleteEntry(){
+    const id=document.getElementById('meId').value; if(!id) return;
+    closeMgrEdit();
+    deleteEntry(id);   // 기존 confirm + 소프트삭제 + 재렌더 재사용
+  }
 
   // ---- 일일업무보고 서술형 ----
   function reportNarrative(memberNames, mgr){
@@ -501,7 +617,7 @@
       s+=`<div class="rep-sub">담당과제</div><div class="rep-line">${esc(allProj.join(', ')||'-')}</div>`;
       s+=`<div class="rep-sub">이행내용</div>`;
       if(!Object.keys(byP).length) s+=`<div class="rep-none">기록 없음</div>`;
-      rawData.projects.filter(p=>byP[p.short_name]).forEach(p=>{
+      projGroups(byP).forEach(p=>{
         s+=`<div class="rep-proj">[${esc(p.short_name)}]</div>`;
         byP[p.short_name].sort((a,b)=>order[a.status]-order[b.status]).forEach(t=>{
           s+=`<div class="rep-line">- ${esc(t.content)}${t.note?` <span class="nt">(${esc(t.note)})</span>`:''}</div>`;
@@ -525,9 +641,9 @@
     const byP={}; mine.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
     if(!Object.keys(byP).length) return '<span class="idle">진행사항 없음</span>';
     let s='';
-    rawData.projects.filter(p=>byP[p.short_name]).forEach(p=>{
+    projGroups(byP).forEach(p=>{
       s+=`<span class="cellproj">[${esc(p.short_name)}]</span>`;
-      byP[p.short_name].forEach(t=>{ s+=`<div class="cellline">- ${esc(t.content)}${t.note?` <span class="nt">(${esc(t.note)})</span>`:''}</div>`; });
+      byP[p.short_name].forEach(t=>{ const cls=mode==='관리'?'cellline editline':'cellline'; const oc=mode==='관리'?` onclick="openMgrEdit('${t.id}')"`:''; s+=`<div class="${cls}"${oc}>- ${esc(t.content)}${t.note?` <span class="nt">(${esc(t.note)})</span>`:''}</div>`; });
     });
     return s;
   }
@@ -563,12 +679,12 @@
       if(!Object.keys(byP).length) return '<span class="idle">진행사항 없음</span>';
       const multi = rawData.members.filter(m=>memTeam(m.name)===tm && memberNames.includes(m.name)).length > 1;   // 팀(다인) 열은 약어로 담당자 표기, PEO(실장 단독) 열만 생략
       let s='';
-      rawData.projects.filter(p=>byP[p.short_name]).forEach(p=>{
+      projGroups(byP).forEach(p=>{
         s+=`<span class="cellproj">[${esc(p.short_name)}]</span>`;
         const byM={}; byP[p.short_name].forEach(t=>{(byM[t.member]=byM[t.member]||[]).push(t);});
         Object.keys(byM).forEach(mn=>{
           if(multi) s+=`<span class="cellabbr">[${esc(abbrOf(mn))}]</span>`;   // 여러 명일 때만 사업 아래 약어별로
-          byM[mn].forEach(t=>{ s+=`<div class="cellline">- ${esc(t.content)}${t.note?` <span class="nt">(${esc(t.note)})</span>`:''}</div>`; });
+          byM[mn].forEach(t=>{ const cls=mode==='관리'?'cellline editline':'cellline'; const oc=mode==='관리'?` onclick="openMgrEdit('${t.id}')"`:''; s+=`<div class="${cls}"${oc}>- ${esc(t.content)}${t.note?` <span class="nt">(${esc(t.note)})</span>`:''}</div>`; });
         });
       });
       return s;
@@ -587,20 +703,20 @@
   function buildIhaeng(memberNames, mgr){
     let txt='';
     if(mgr && mRep==='팀별'){
-      [...new Set(rawData.members.filter(m=>memberNames.includes(m.name)).map(m=>memTeam(m.name)))].sort(teamSort).forEach(tm=>{ txt+='['+tm+']\n';
+      [...new Set(rawData.members.filter(m=>memberNames.includes(m.name)).map(m=>memTeam(m.name)))].filter(Boolean).sort(teamSort).forEach(tm=>{ txt+='['+tm+']\n';
         const te=rawData.entries.filter(t=>t.kind==='일간'&&dm(t)&&memTeam(t.member)===tm&&memberNames.includes(t.member));
         const byP={}; te.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
         const multi = rawData.members.filter(m=>memTeam(m.name)===tm && memberNames.includes(m.name)).length > 1;
-        rawData.projects.filter(p=>byP[p.short_name]).forEach(p=>{ txt+='['+p.short_name+']\n';
+        projGroups(byP).forEach(p=>{ txt+='['+p.short_name+']\n';
           const byM={}; byP[p.short_name].forEach(t=>{(byM[t.member]=byM[t.member]||[]).push(t);});
           Object.keys(byM).forEach(mn=>{ if(multi) txt+='['+abbrOf(mn)+']\n'; byM[mn].forEach(t=>{ txt+='- '+t.content+(t.note?' ('+t.note+')':'')+'\n'; }); }); });
         txt+='\n'; });
     } else {
-      memberNames.filter(nm=>rawData.entries.some(t=>t.member===nm&&t.kind==='일간'&&dm(t))).forEach(nm=>{
+      memberNames.filter(nm=>rawData.entries.some(t=>t.member===nm&&t.kind==='일간'&&dm(t)) && !(mgr && memTeam(nm)==='PEO')).forEach(nm=>{   // 사람별 복사는 화면과 동일하게 실장(PEO) 제외(단, 팀원 본인 미리보기는 유지)
         if(mgr) txt+='['+nm+']\n';
         const mine=rawData.entries.filter(t=>t.member===nm&&t.kind==='일간'&&dm(t));
         const byP={}; mine.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
-        rawData.projects.filter(p=>byP[p.short_name]).forEach(p=>{ txt+='['+p.short_name+']\n';
+        projGroups(byP).forEach(p=>{ txt+='['+p.short_name+']\n';
           byP[p.short_name].forEach(t=>{ txt+='- '+t.content+(t.note?' ('+t.note+')':'')+'\n'; }); });
         txt+='\n';
       });
@@ -613,13 +729,17 @@
     let rows=rawData.entries.filter(t=>t.kind===kind && dm(t) && memberNames.includes(t.member));
     if(!rows.length) return `<div class="rep-none">해당 조건의 업무가 없습니다.</div>`;
     let html=`<table class="st"><thead><tr><th>프로젝트</th><th>담당자</th><th>세부내용</th><th>마감일</th><th>진행상태</th><th>진행도</th><th>비고</th></tr></thead><tbody>`;
-    const rowH=t=>{ const od=t.deadline&&String(t.deadline).length>=10&&t.deadline<TODAY&&t.status!=='완료'; return `<tr><td style="font-weight:800;color:var(--brand)">${esc(t.project)}</td><td>${esc(t.member)}</td><td>${esc(t.content)}</td><td style="${od?'color:#ef3e36;font-weight:900':''}">${esc(ddlShort(t.deadline))||'-'}</td><td><span class="stb" style="color:${STCOLOR[t.status]};background:${STBG[t.status]}">${t.status}</span></td><td style="text-align:center">${t.progress}%</td><td class="c-note">${esc(t.note||'')}</td></tr>`; };
+    const rowH=t=>{ const od=t.deadline&&String(t.deadline).length>=10&&t.deadline<TODAY&&t.status!=='완료'; const ed=mode==='관리'?` class="editrow" onclick="openMgrEdit('${t.id}')"`:''; return `<tr${ed}><td style="font-weight:800;color:var(--brand)">${esc(t.project)}</td><td>${esc(t.member)}</td><td>${esc(t.content)}</td><td style="${od?'color:#ef3e36;font-weight:900':''}">${esc(ddlShort(t.deadline))||'-'}</td><td><span class="stb" style="color:${STCOLOR[t.status]};background:${STBG[t.status]}">${t.status}</span></td><td style="text-align:center">${t.progress}%</td><td class="c-note">${esc(t.note||'')}</td></tr>`; };
     if(groupBy==='사업별'){
       const teams=[...new Set(rows.map(t=>t.team))].sort();
       teams.forEach(tm=>{ html+=`<tr class="team"><td colspan="7">${esc(tm)}</td></tr>`;
-        rawData.projects.filter(p=>p.team===tm && rows.some(t=>t.project===p.short_name)).forEach(p=>{
-          html+=`<tr class="proj"><td colspan="7">[${esc(p.short_name)}] ${esc(p.full_name||'')}</td></tr>`;
-          rows.filter(t=>t.project===p.short_name).sort((a,b)=>order[a.status]-order[b.status]).forEach(t=>html+=rowH(t));
+        // 프로젝트를 entry 기준으로 도출(프로젝트 team 불일치·미등록 사업이어도 업무가 사라지지 않게), 등록순 우선
+        const prs=[...new Set(rows.filter(t=>t.team===tm).map(t=>t.project))];
+        const ordered=rawData.projects.filter(p=>prs.includes(p.short_name)).map(p=>p.short_name);
+        prs.forEach(k=>{ if(!ordered.includes(k)) ordered.push(k); });
+        ordered.forEach(pr=>{ const p=projBy(pr);
+          html+=`<tr class="proj"><td colspan="7">[${esc(pr)}] ${esc(p.full_name||'')}</td></tr>`;
+          rows.filter(t=>t.team===tm && t.project===pr).sort((a,b)=>order[a.status]-order[b.status]).forEach(t=>html+=rowH(t));
         }); });
     } else {
       rawData.members.filter(m=>memberNames.includes(m.name)&&rows.some(t=>t.member===m.name)).forEach(m=>{
@@ -631,7 +751,7 @@
   }
 
   function copyReport(who){
-    const names = who==='member' ? [ME] : rawData.members.filter(m=>mTeam==='전체'||memTeam(m.name).indexOf(mTeam)===0).map(m=>m.name);
+    const names = who==='member' ? [ME] : rawData.members.filter(m=>{ const t=memTeam(m.name); return t!==null && (mTeam==='전체'||t.indexOf(mTeam)===0); }).map(m=>m.name);
     const txt = buildIhaeng(names, who==='manager');
     navigator.clipboard.writeText(txt).then(()=>toast('이행내용을 복사했습니다.'));
   }
