@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AxPRO | 과제 관리</title>
+<style>
+  *,*::before,*::after{ box-sizing:border-box; }
+  body{ font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif; background:#f1f5f9; color:#111827; line-height:1.5; -webkit-font-smoothing:antialiased; margin:0; }
+  button,input,select{ font-family:inherit; }
+  button{ border:none; background:none; cursor:pointer; }
+  .ic{ display:inline-block; vertical-align:-.18em; width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .form-input{ width:100%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:11px 14px; font-size:14px; font-weight:600; outline:none; color:#111827; }
+  .form-input:focus{ background:#fff; border-color:#0066cc; box-shadow:0 0 0 3px rgba(0,102,204,.1); }
+  select.form-input{ cursor:pointer; }
+  .form-input.strong{ font-weight:900; }
+  .overlay{ position:fixed; inset:0; background:rgba(15,23,42,.3); backdrop-filter:blur(8px); z-index:100; display:none; align-items:center; justify-content:center; padding:16px; }
+  .overlay.active{ display:flex; }
+  .st{ font-size:11px; font-weight:900; display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:8px; }
+  .st .d{ width:6px; height:6px; border-radius:50%; }
+  .st-제안{ background:#fef3c7; color:#92400e; } .st-제안 .d{ background:#92400e; }
+  .st-진행{ background:#dcfce7; color:#166534; } .st-진행 .d{ background:#166534; }
+  .st-완료{ background:#e5e7eb; color:#4b5563; } .st-완료 .d{ background:#4b5563; }
+  .st-기타{ background:#dbeafe; color:#1e40af; } .st-기타 .d{ background:#1e40af; }
+  .st-문제발생{ background:#fee2e2; color:#b91c1c; } .st-문제발생 .d{ background:#b91c1c; }
+  #toast{ position:fixed; top:16px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:11px 24px; border-radius:99px; font-size:13px; font-weight:700; opacity:0; transition:.35s; z-index:400; }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(6px); }
+  .lb{ display:block; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin:0 0 5px 2px; }
+
+  /* semantic classes replacing Tailwind utilities (visually identical) */
+  .wrap{ max-width:1100px; margin:0 auto; padding:20px; }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+  .title{ font-size:20px; line-height:28px; font-weight:900; color:#1e293b; margin:0; }
+  .subcount{ font-size:12px; font-weight:700; color:#94a3b8; margin:4px 0 0; }
+  .actions{ display:flex; align-items:center; gap:8px; }
+  .conn{ display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:#94a3b8; }
+  .status-dot{ width:8px; height:8px; border-radius:9999px; }
+  .dot-ok{ background:#22c55e; } .dot-off{ background:#f43f5e; } .dot-pend{ background:#3b82f6; }
+  .btn{ display:inline-flex; align-items:center; gap:4px; font-weight:700; border-radius:8px; cursor:pointer; text-decoration:none; transition:.15s; }
+  .btn-ghost{ font-size:12px; color:#64748b; padding:8px 12px; }
+  .btn-ghost:hover{ color:#0066cc; }
+  .btn-new{ background:#0066cc; color:#fff; font-size:13px; padding:10px 16px; }
+  .btn-new:hover{ background:#1d4ed8; }
+  .plist{ display:flex; flex-direction:column; gap:8px; }
+  .empty{ text-align:center; color:#94a3b8; padding:64px 0; font-weight:700; }
+  .prow{ background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 20px; display:grid; grid-template-columns:90px 1fr 110px 100px 110px 28px; align-items:center; gap:12px; cursor:pointer; transition:.15s; }
+  .prow:hover{ border-color:#7dd3fc; }
+  .p-abbr{ font-size:10px; font-weight:900; background:#0f172a; color:#fff; padding:4px 8px; border-radius:4px; text-align:center; }
+  .p-name{ font-size:14px; font-weight:700; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .p-team{ font-size:12px; font-weight:700; color:#94a3b8; }
+  .p-mgr{ font-size:12px; font-weight:700; color:#64748b; }
+  .p-edit{ text-align:right; opacity:.3; }
+  .modal-card{ background:#fff; border-radius:16px; width:100%; max-width:500px; padding:28px; position:relative; box-shadow:0 25px 50px -12px rgba(0,0,0,.25); }
+  .modal-close{ position:absolute; top:20px; right:20px; color:#94a3b8; padding:0; }
+  .modal-close:hover{ color:#f43f5e; }
+  .modal-title{ font-size:13px; font-weight:900; letter-spacing:.1em; color:#94a3b8; margin:0 0 20px; text-transform:uppercase; }
+  .f-row{ margin-bottom:12px; }
+  .f-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:12px; }
+  .f-row-sm{ margin-bottom:8px; }
+  .modal-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:24px; padding-top:20px; border-top:1px solid #f1f5f9; }
+  .btn-del{ color:#f43f5e; font-weight:700; font-size:13px; padding:8px 16px; border-radius:8px; }
+  .btn-del:hover{ background:#fff1f2; }
+  .btn-save{ background:#0066cc; color:#fff; font-weight:700; font-size:13px; padding:12px 32px; border-radius:8px; box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1); }
+  .btn-save:hover{ background:#1d4ed8; }
+
+  @media (min-width:1024px){ .wrap{ padding:32px; } }
+  @media (prefers-color-scheme:dark){
+    body{ background:#0b0e15; color:#e5ecf6; }
+    .form-input{ background:#1b2231; border-color:#2a3446; color:#e5ecf6; }
+    .prow,.modal-card{ background:#141a26 !important; }
+    .prow{ border-color:#2a3446 !important; }
+    .modal-foot{ border-top-color:#2a3446 !important; }
+    .title,.p-name{ color:#e5ecf6 !important; }
+    .subcount,.conn,.p-team,.p-mgr,.btn-ghost,.modal-close,.modal-title{ color:#8b98ad !important; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-arrow_back" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-edit_note" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+</defs></svg>
+<div class="wrap">
+  <div class="topbar">
+    <div><h1 class="title">과제 관리</h1><p id="cnt" class="subcount">불러오는 중...</p></div>
+    <div class="actions">
+      <div class="conn"><div id="dot" class="status-dot dot-ok"></div><span id="stat">저장됨</span></div>
+      <a href="app.html" class="btn btn-ghost"><svg class="ic" style="width:17px;height:17px"><use href="#i-arrow_back"/></svg> 보드</a>
+      <button onclick="openEdit(-1)" class="btn btn-new"><svg class="ic" style="width:17px;height:17px"><use href="#i-add"/></svg> 새 과제</button>
+    </div>
+  </div>
+  <div id="list" class="plist"><div class="empty">불러오는 중...</div></div>
+</div>
+
+<div class="overlay" id="modal">
+  <div class="modal-card">
+    <button onclick="close_()" class="modal-close"><svg class="ic" style="width:22px;height:22px"><use href="#i-close"/></svg></button>
+    <h3 class="modal-title">Project Details</h3>
+    <input type="hidden" id="eIdx"><input type="hidden" id="eId"><input type="hidden" id="eRev">
+    <div class="f-row"><label class="lb">약어 (보드 표시명) *</label><input id="eShort" class="form-input strong"></div>
+    <div class="f-row"><label class="lb">정식 명칭 *</label><input id="eFull" class="form-input"></div>
+    <div class="f-grid">
+      <div><label class="lb">담당 팀</label><input id="eTeam" class="form-input" list="teamL"><datalist id="teamL"><option value="식품AX"><option value="환경AX"></datalist></div>
+      <div><label class="lb">담당자</label><input id="eManager" class="form-input"></div>
+    </div>
+    <div class="f-row-sm"><label class="lb">상태</label><select id="eStatus" class="form-input"><option>제안</option><option>진행</option><option>완료</option><option>기타</option><option>문제발생</option></select></div>
+    <div class="modal-foot">
+      <button id="delBtn" onclick="del_()" class="btn-del">삭제</button>
+      <button onclick="save_()" class="btn-save">저장</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+  if(!AX.requireAuth()){ throw 'no-auth'; }
+  if(!AX.isAdmin()){ document.body.innerHTML='<div style="text-align:center;padding:80px 20px;font-weight:700;color:#64748b">총괄관리자(admin)만 접근할 수 있습니다. <a href="app.html" style="color:#0066cc">보드로</a></div>'; throw 'no-perm'; }
+  let projects=[];
+  AX.onStatus(s=>{ const d=document.getElementById('dot'),t=document.getElementById('stat'); d.className='status-dot '+(s.offline?'dot-off':s.pending?'dot-pend':'dot-ok'); t.textContent=s.offline?'오프라인 · 대기 '+s.pending:s.pending?'저장 중…':'저장됨'; });
+  AX.onApply((sheet,r)=>{ if(sheet!=='projects')return; const i=projects.findIndex(p=>p.id===r.id);
+    if(r.status==='applied'){ if(i>-1&&r.serverRow&&!AX.hasPending('projects',r.id,r.opId))projects[i]=r.serverRow; else if(i>-1&&r.rev!=null)projects[i].rev=r.rev; }
+    else if(r.status==='conflict'){ if(r.serverRow){ if(i>-1)projects[i]=r.serverRow; else if(r.serverRow.deleted!==true)projects.push(r.serverRow); } toast('다른 관리자가 먼저 수정 — 최신본으로 갱신'); render(); }
+    else if(r.status==='error'){ toast('거부: '+(r.error||'')+' — 새로고침합니다.'); init(); } });
+
+  window.onload = init;
+  async function init(){ const res=await AX.pull(['projects']); projects=(res.data.projects||[]).filter(p=>p.deleted!==true).sort((a,b)=>(+a.order||999)-(+b.order||999)); render(); }
+
+  function render(){
+    document.getElementById('cnt').textContent=`총 ${projects.length}개`;
+    document.getElementById('list').innerHTML = projects.length? projects.map((p,idx)=>`
+      <div onclick="openEdit(${idx})" class="prow">
+        <div class="p-abbr">${esc(p.short_name)}</div>
+        <div class="p-name">${esc(p.full_name)}</div>
+        <div class="p-team">${esc(p.team||'')}</div>
+        <div class="p-mgr">${esc(p.manager||'')}</div>
+        <div><span class="st st-${esc(p.status)}"><span class="d"></span>${esc(p.status||'')}</span></div>
+        <div class="p-edit"><svg class="ic" style="width:18px;height:18px"><use href="#i-edit_note"/></svg></div>
+      </div>`).join('') : '<div class="empty">등록된 과제가 없습니다.</div>';
+  }
+  function openEdit(idx){
+    document.getElementById('eIdx').value=idx;
+    document.getElementById('delBtn').style.display=idx===-1?'none':'inline-block';
+    const p=idx===-1?{status:'제안'}:projects[idx];
+    document.getElementById('eId').value=p.id||''; document.getElementById('eRev').value=p.rev||0;
+    document.getElementById('eShort').value=p.short_name||''; document.getElementById('eFull').value=p.full_name||'';
+    document.getElementById('eTeam').value=p.team||''; document.getElementById('eManager').value=p.manager||''; document.getElementById('eStatus').value=p.status||'제안';
+    document.getElementById('modal').classList.add('active');
+  }
+  function close_(){ document.getElementById('modal').classList.remove('active'); }
+  function save_(){
+    const idx=+document.getElementById('eIdx').value;
+    const short=v('eShort'), full=v('eFull');
+    if(!short||!full) return toast('약어·정식명칭은 필수입니다.');
+    const fields={ short_name:short, full_name:full, team:v('eTeam'), manager:v('eManager'), status:document.getElementById('eStatus').value,
+      order: idx===-1?projects.length+1:(projects[idx].order||idx+1) };
+    const id=document.getElementById('eId').value || ('P-'+AX.uuid());
+    const rev=idx===-1?0:(+document.getElementById('eRev').value||0);
+    if(idx===-1) projects.push(Object.assign({id,rev:0,deleted:false},fields)); else Object.assign(projects[idx],fields);
+    AX.enqueue({ sheet:'projects', type:'upsert', id, baseRev:rev, fields });
+    close_(); render();
+  }
+  function del_(){
+    const idx=+document.getElementById('eIdx').value; if(idx<0) return;
+    const p=projects[idx]; if(!confirm(`'${p.short_name}' 과제를 삭제하시겠습니까? (소프트 삭제)`)) return;
+    AX.enqueue({ sheet:'projects', type:'delete', id:p.id, baseRev:+p.rev||0, fields:{} });
+    projects.splice(idx,1); close_(); render();
+  }
+  function v(id){ return document.getElementById(id).value.trim(); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+</script>
+</body>
+</html>
