@@ -57,9 +57,9 @@
   .pgrp{ margin-bottom:16px; } .pgrp-h{ display:flex; align-items:center; gap:7px; margin-bottom:6px; }
   .ptag{ font-size:12px; font-weight:900; color:var(--brand); background:#eaf2fd; padding:3px 10px; border-radius:7px; } .pgrp-h .pf{ font-size:11px; color:var(--muted); font-weight:600; }
   .erow{ display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:5px; }
-  .erow.done{ opacity:.6; }
+  .erow.done{ }   /* 완료도 흐리게/취소선 없이 다른 항목과 동일하게(완료 뱃지·체크로 구분) */
   .check{ width:20px;height:20px;border-radius:50%;border:2px solid #d2d2d7;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer; } .check .ic{width:12px;height:12px;opacity:0;} .check.done{background:var(--brand);border-color:var(--brand);} .check.done .ic{opacity:1;}
-  .econt{ flex:1; font-size:13px; font-weight:600; min-width:0; cursor:pointer; } .erow.done .econt{ text-decoration:line-through; color:#b0b6c0; }
+  .econt{ flex:1; font-size:13px; font-weight:600; min-width:0; cursor:pointer; }
   .enote{ font-size:11px; color:var(--muted); font-weight:500; }
   .emeta{ display:flex; align-items:center; gap:6px; flex:none; }
   .ddl{ font-size:10.5px; font-weight:800; color:#8a909c; }
@@ -119,6 +119,7 @@
   .mgr-sub{ font-size:12.5px; color:var(--muted); font-weight:700; margin-bottom:18px; }
   .mgr-copy{ float:right; font-size:12px; font-weight:800; color:#fff; background:#151a22; padding:8px 15px; border-radius:9px; display:inline-flex; gap:6px; align-items:center; }
   .mgr-add{ float:right; margin-left:8px; font-size:12px; font-weight:800; color:#fff; background:var(--brand); padding:8px 15px; border-radius:9px; } .mgr-add:hover{ background:#0059b3; }
+  .mgr-toggle{ float:right; margin-left:8px; font-size:12px; font-weight:800; color:var(--muted); background:#eef1f6; padding:8px 13px; border-radius:9px; } .mgr-toggle.on{ color:var(--brand); background:#eaf2fd; } .mgr-toggle:hover{ background:#e2e6ee; }
   /* 편집 진입 표시(관리자) */
   table.st tr.editrow{ cursor:pointer; } table.st tr.editrow:hover td{ background:#eef6ff; }
   .cellline.editline{ cursor:pointer; border-radius:5px; padding-left:3px; } .cellline.editline:hover{ background:#eef6ff; }
@@ -309,6 +310,8 @@
   function activeKind(){ return mode==='관리' ? (mView==='주간'?'주간':'일간') : scope; }
   // 엔트리가 현재 조회일에 속하는가: 일간=그 날, 주간=그 주(월요일 스탬프)
   function dm(t){ return t.kind==='주간' ? (t.date===weekMonOf(activeDate)) : (t.date===activeDate); }
+  // 일일보고 편입 대상: 그 날짜의 일간 + 그 날 완료한 주간(done_date). 주간을 미완료로 되돌리면 status 조건에서 자동 제외
+  function inDaily(t){ return (t.kind==='일간' && t.date===activeDate) || (t.kind==='주간' && t.status==='완료' && t.done_date===activeDate); }
   function ddlShort(d){ if(!d) return ''; return String(d).length>=10 ? String(d).slice(5).replace('-','.') : String(d); }
   // AxPRO 범위 = PE실(PEO)만. dept 로 다른 실(PS/PM)은 제외 → null. 범위 안에서 식품/환경/PEO(실장) 분류
   const OTHER_SIL=/PSO|PS실|PS팀|PMO|PM실|PM1|PM2|VibeX|사업지원|사업관리/i;
@@ -327,7 +330,7 @@
   const order={문제발생:0,진행중:1,보류:2,대기:3,완료:4};
 
   let rawData={ entries:[], projects:[], members:[] };
-  let scope='일간', rtab='보고', mode='내업무', mView='보고', mGroup='사업별', mRep='팀별', mTeam=null;
+  let scope='일간', rtab='보고', mode='내업무', mView='보고', mGroup='사업별', mRep='팀별', mTeam=null, mShowDone=true;
   let form={status:'진행중', progress:0};
   const pendingSnap={};
 
@@ -393,7 +396,7 @@
     const fp=document.getElementById('fProj');
     if(!ps.length){ fp.innerHTML='<option value="">등록된 과제 없음 — 관리자에게 요청</option>'; document.getElementById('addBtn').disabled=true; }
     else { const teams=[...new Set(ps.map(p=>p.team||'기타'))];
-      fp.innerHTML=teams.map(tm=>'<optgroup label="'+esc(tm)+'">'+ps.filter(p=>(p.team||'기타')===tm).map(p=>`<option value="${esc(p.short_name)}" title="${esc(p.full_name||'')}">${esc(p.short_name)}</option>`).join('')+'</optgroup>').join(''); }
+      fp.innerHTML='<option value="">사업 선택</option>'+teams.map(tm=>'<optgroup label="'+esc(tm)+'">'+ps.filter(p=>(p.team||'기타')===tm).map(p=>`<option value="${esc(p.short_name)}" title="${esc(p.full_name||'')}">${esc(p.short_name)}</option>`).join('')+'</optgroup>').join(''); }   // 기본=빈 '선택'
     fp.title=(fp.selectedOptions[0]||{}).title||'';   // 닫힌 상태에서도 선택된 사업 풀네임을 마우스오버로
     document.getElementById('fSt').innerHTML=STATUS.map(s=>`<button data-s="${s}" onclick="pickSt('${s}',this)" style="color:${STCOLOR[s]}">${s}</button>`).join('');
     document.getElementById('fPg').innerHTML=[0,25,50,75,100].map(v=>`<button data-p="${v}" onclick="pickPg(${v},this)">${v}</button>`).join('');
@@ -446,6 +449,7 @@
     if(editingId){ patchEntry(editingId, fields); cancelEdit(); return; }   // 수정 저장
     const id='E-'+AX.uuid();
     fields.date=(scope==='주간'?weekMonOf(activeDate):activeDate); fields.kind=scope; fields.member=ME;   // 조회 중인 날/주에 저장
+    if(scope==='주간' && fields.status==='완료') fields.done_date=TODAY;   // 신규 주간을 완료로 등록 시 처리일 기록
     rawData.entries.unshift(normE(Object.assign({id,rev:0,deleted:false,updated_at:new Date().toISOString(),updated_by:ME},fields)));
     const opId=AX.enqueue({ sheet:'entries', type:'upsert', id, baseRev:0, fields });
     pendingSnap[opId]={kind:'create',id};
@@ -457,6 +461,7 @@
     const prev=JSON.parse(JSON.stringify(rawData.entries[i]));
     const baseRev=+rawData.entries[i].rev||0;
     if(ch.status==='완료' && ch.progress==null) ch.progress=100;
+    if(ch.status==='완료' && (ch.kind||rawData.entries[i].kind)==='주간' && ch.done_date==null) ch.done_date=TODAY;   // 주간 완료 → 처리일 기록(일일보고 편입)
     Object.assign(rawData.entries[i],ch,{updated_at:new Date().toISOString(),updated_by:ME}); normE(rawData.entries[i]);
     const opId=AX.enqueue({ sheet:'entries', type:'upsert', id, baseRev, fields:Object.assign({},ch) });
     pendingSnap[opId]={kind:'edit',id,prev};
@@ -535,8 +540,10 @@
     const bodyHtml = mView==='보고' ? (mRep==='팀별'?reportTeamGrid(teamMembers):reportPersonGrid(teamMembers)) : statusTable(mView,mGroup,teamMembers);
     const copyBtn = mView==='보고' ? `<button class="mgr-copy" onclick="copyReport('manager')"><svg class="ic" style="width:14px;height:14px"><use href="#i-content_copy"/></svg> 이행내용 복사</button>` : '';
     const addBtn = `<button class="mgr-add" onclick="openMgrEdit('')">＋ 업무 추가</button>`;   // 관리자 직접 추가
-    document.getElementById('mgrSheet').innerHTML=copyBtn+addBtn+`<div class="mgr-title">${title}</div><div class="mgr-sub">${esc(sub)} · <span style="color:var(--brand)">항목 클릭 시 수정</span></div>${bodyHtml}`;
+    const doneBtn = mView!=='보고' ? `<button class="mgr-toggle ${mShowDone?'on':''}" onclick="toggleMShowDone()">완료 ${mShowDone?'표시':'숨김'}</button>` : '';   // 진행현황: 완료 보기/가리기(기본 보기)
+    document.getElementById('mgrSheet').innerHTML=copyBtn+addBtn+doneBtn+`<div class="mgr-title">${title}</div><div class="mgr-sub">${esc(sub)} · <span style="color:var(--brand)">항목 클릭 시 수정</span></div>${bodyHtml}`;
   }
+  function toggleMShowDone(){ mShowDone=!mShowDone; renderManager(); }
   function setMView(v,b){ mView=v; document.querySelectorAll('#mgrView button').forEach(x=>x.classList.remove('on'));b.classList.add('on'); renderDateNav(); renderManager(); saveView(); }
   function setMGroup(v,b){ mGroup=v; document.querySelectorAll('#mgrGroup button').forEach(x=>x.classList.remove('on'));b.classList.add('on'); renderManager(); saveView(); }
   function setMRep(v,b){ mRep=v; document.querySelectorAll('#mgrRep button').forEach(x=>x.classList.remove('on'));b.classList.add('on'); renderManager(); saveView(); }
@@ -589,6 +596,7 @@
     const fields={ member, project, team:p.team||memTeam(member)||'', content, kind,
       date:(kind==='주간'?weekMonOf(rawDate):rawDate),
       deadline:document.getElementById('meDdl').value, status:st, progress:pg, note:document.getElementById('meNote').value.trim() };
+    if(kind==='주간' && st==='완료') fields.done_date=TODAY;   // 주간 완료 → 처리일 기록(일일보고 편입)
     if(id){ patchEntry(id, fields); }   // 수정: rev-게이트 낙관적 반영
     else {                               // 추가: create 경로(부원 아무나 지정 가능)
       const nid='E-'+AX.uuid();
@@ -610,7 +618,7 @@
   function reportNarrative(memberNames, mgr){
     const renderMem=(nm)=>{
       const m=rawData.members.find(x=>x.name===nm)||{};
-      const mine=rawData.entries.filter(t=>t.member===nm && t.kind==='일간' && dm(t));
+      const mine=rawData.entries.filter(t=>t.member===nm && inDaily(t));
       const allProj=assignedProjects(nm);
       const byP={}; mine.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
       const idle=allProj.filter(p=>!byP[p]);
@@ -638,7 +646,7 @@
   function abbrOf(nm){ return (rawData.members.find(m=>m.name===nm)||{}).abbr || String(nm).slice(-1); }
   // 한 사람의 이행내용 ([사업] - 내용(비고)) — 엑셀 서술 그대로, 상태/이름 미표기
   function ihaengCell(nm){
-    const mine=rawData.entries.filter(t=>t.member===nm && t.kind==='일간' && dm(t));
+    const mine=rawData.entries.filter(t=>t.member===nm && inDaily(t));
     const byP={}; mine.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
     if(!Object.keys(byP).length) return '<span class="idle">진행사항 없음</span>';
     let s='';
@@ -648,7 +656,7 @@
     });
     return s;
   }
-  function idleOf(nm){ const all=assignedProjects(nm); const td=[...new Set(rawData.entries.filter(t=>t.member===nm&&t.kind==='일간'&&dm(t)).map(t=>t.project))]; return all.filter(p=>!td.includes(p)); }
+  function idleOf(nm){ const all=assignedProjects(nm); const td=[...new Set(rawData.entries.filter(t=>t.member===nm&&inDaily(t)).map(t=>t.project))]; return all.filter(p=>!td.includes(p)); }
 
   // ---- 사람별: 엑셀 2번째 시트(사람=열, 행=담당과제/이행내용/미진행) ----
   function reportPersonGrid(memberNames){
@@ -675,7 +683,7 @@
     const teams=[...new Set(rawData.members.filter(m=>memberNames.includes(m.name)).map(m=>memTeam(m.name)))].filter(Boolean).sort(teamSort);
     if(!teams.length) return `<div class="rep-none">기록이 없습니다.</div>`;
     const teamCell=(tm)=>{
-      const te=rawData.entries.filter(t=>t.kind==='일간'&&dm(t)&&memTeam(t.member)===tm&&memberNames.includes(t.member));
+      const te=rawData.entries.filter(t=>inDaily(t)&&memTeam(t.member)===tm&&memberNames.includes(t.member));
       const byP={}; te.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
       if(!Object.keys(byP).length) return '<span class="idle">진행사항 없음</span>';
       const multi = rawData.members.filter(m=>memTeam(m.name)===tm && memberNames.includes(m.name)).length > 1;   // 팀(다인) 열은 약어로 담당자 표기, PEO(실장 단독) 열만 생략
@@ -691,7 +699,7 @@
       return s;
     };
     const lead=(tm)=>{ const inT=rawData.members.filter(m=>memTeam(m.name)===tm); const l=inT.find(m=>/팀장/.test(m.rank||''))||inT.find(m=>/실장/.test(m.rank||'')); return l?`<span class="rk">${esc(l.name)} ${esc(l.rank)}</span>`:''; };
-    const idleTeam=(tm)=>{ const ppl=rawData.members.filter(m=>memTeam(m.name)===tm&&memberNames.includes(m.name)); const all=[...new Set(ppl.flatMap(m=>assignedProjects(m.name)))]; const td=[...new Set(rawData.entries.filter(t=>ppl.some(m=>m.name===t.member)&&t.kind==='일간'&&dm(t)).map(t=>t.project))]; return all.filter(p=>!td.includes(p)); };
+    const idleTeam=(tm)=>{ const ppl=rawData.members.filter(m=>memTeam(m.name)===tm&&memberNames.includes(m.name)); const all=[...new Set(ppl.flatMap(m=>assignedProjects(m.name)))]; const td=[...new Set(rawData.entries.filter(t=>ppl.some(m=>m.name===t.member)&&inDaily(t)).map(t=>t.project))]; return all.filter(p=>!td.includes(p)); };
     let html=`<table class="rep-grid"><colgroup><col style="width:78px">${teams.map(()=>'<col>').join('')}</colgroup>`;
     html+=`<tr class="head"><th></th>${teams.map(tm=>`<th>${esc(tm)}<br>${lead(tm)}</th>`).join('')}</tr>`;
     html+=`<tr><td class="rowlbl">이행내용</td>${teams.map(tm=>`<td>${teamCell(tm)}</td>`).join('')}</tr>`;
@@ -705,7 +713,7 @@
     let txt='';
     if(mgr && mRep==='팀별'){
       [...new Set(rawData.members.filter(m=>memberNames.includes(m.name)).map(m=>memTeam(m.name)))].filter(Boolean).sort(teamSort).forEach(tm=>{ txt+='['+tm+']\n';
-        const te=rawData.entries.filter(t=>t.kind==='일간'&&dm(t)&&memTeam(t.member)===tm&&memberNames.includes(t.member));
+        const te=rawData.entries.filter(t=>inDaily(t)&&memTeam(t.member)===tm&&memberNames.includes(t.member));
         const byP={}; te.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
         const multi = rawData.members.filter(m=>memTeam(m.name)===tm && memberNames.includes(m.name)).length > 1;
         projGroups(byP).forEach(p=>{ txt+='['+p.short_name+']\n';
@@ -713,9 +721,9 @@
           Object.keys(byM).forEach(mn=>{ if(multi) txt+='['+abbrOf(mn)+']\n'; byM[mn].forEach(t=>{ txt+='- '+t.content+(t.note?' ('+t.note+')':'')+'\n'; }); }); });
         txt+='\n'; });
     } else {
-      memberNames.filter(nm=>rawData.entries.some(t=>t.member===nm&&t.kind==='일간'&&dm(t)) && !(mgr && memTeam(nm)==='PEO')).forEach(nm=>{   // 사람별 복사는 화면과 동일하게 실장(PEO) 제외(단, 팀원 본인 미리보기는 유지)
+      memberNames.filter(nm=>rawData.entries.some(t=>t.member===nm&&inDaily(t)) && !(mgr && memTeam(nm)==='PEO')).forEach(nm=>{   // 사람별 복사는 화면과 동일하게 실장(PEO) 제외(단, 팀원 본인 미리보기는 유지)
         if(mgr) txt+='['+nm+']\n';
-        const mine=rawData.entries.filter(t=>t.member===nm&&t.kind==='일간'&&dm(t));
+        const mine=rawData.entries.filter(t=>t.member===nm&&inDaily(t));
         const byP={}; mine.forEach(t=>{(byP[t.project]=byP[t.project]||[]).push(t);});
         projGroups(byP).forEach(p=>{ txt+='['+p.short_name+']\n';
           byP[p.short_name].forEach(t=>{ txt+='- '+t.content+(t.note?' ('+t.note+')':'')+'\n'; }); });
@@ -727,7 +735,7 @@
 
   // ---- 진행현황 표 ----
   function statusTable(kind, groupBy, memberNames){
-    let rows=rawData.entries.filter(t=>t.kind===kind && dm(t) && memberNames.includes(t.member));
+    let rows=rawData.entries.filter(t=>t.kind===kind && dm(t) && memberNames.includes(t.member) && !(mode==='관리' && !mShowDone && t.status==='완료'));   // 관리 진행현황에서 완료 숨김 토글
     if(!rows.length) return `<div class="rep-none">해당 조건의 업무가 없습니다.</div>`;
     let html=`<table class="st"><thead><tr><th>프로젝트</th><th>담당자</th><th>세부내용</th><th>마감일</th><th>진행상태</th><th>진행도</th><th>비고</th></tr></thead><tbody>`;
     const rowH=t=>{ const od=t.deadline&&String(t.deadline).length>=10&&t.deadline<TODAY&&t.status!=='완료'; const ed=mode==='관리'?` class="editrow" onclick="openMgrEdit('${t.id}')"`:''; return `<tr${ed}><td style="font-weight:800;color:var(--brand)">${esc(t.project)}</td><td>${esc(t.member)}</td><td>${esc(t.content)}</td><td style="${od?'color:#ef3e36;font-weight:900':''}">${esc(ddlShort(t.deadline))||'-'}</td><td><span class="stb" style="color:${STCOLOR[t.status]};background:${STBG[t.status]}">${t.status}</span></td><td style="text-align:center">${t.progress}%</td><td class="c-note">${esc(t.note||'')}</td></tr>`; };
